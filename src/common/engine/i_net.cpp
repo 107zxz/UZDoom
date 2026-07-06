@@ -28,47 +28,50 @@
 
 /* [Petteri] Use Winsock if compiling for Win32: */
 #ifdef _WIN32
-#	define WIN32_LEAN_AND_MEAN
-#	define NOMINMAX
-#	include <windows.h>
-#	include <winsock.h>
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+// #include <winsock.h>
 #else
-#	include <arpa/inet.h>
-#	include <errno.h>
-#	include <netdb.h>
-#	include <netinet/in.h>
-#	include <sys/ioctl.h>
-#	include <sys/socket.h>
-#	include <unistd.h>
-#	ifdef __sun
-#		include <fcntl.h>
-#	endif
+#include <arpa/inet.h>
+#include <errno.h>
+#include <netdb.h>
+#include <netinet/in.h>
+// #include <sys/ioctl.h>
+// #include <sys/socket.h>
+#include <unistd.h>
+#ifdef __sun
+#include <fcntl.h>
+#endif
 #endif
 
 #include "c_cvars.h"
 #include "cmdlib.h"
 #include "engineerrors.h"
+#include "filesystem.h"
 #include "i_interface.h"
 #include "i_net.h"
+#include "i_steamapi.h"
 #include "m_argv.h"
 #include "m_crc32.h"
 #include "m_random.h"
 #include "printf.h"
 #include "version.h"
 #include "widgets/netstartwindow.h"
-#include "filesystem.h"
 
 /* [Petteri] Get more portable: */
 #ifndef _WIN32
+// TODO: Steamify
 typedef int SOCKET;
-#define SOCKET_ERROR		-1
-#define INVALID_SOCKET		-1
-#define closesocket			close
-#define ioctlsocket			ioctl
-#define Sleep(x)			usleep (x * 1000)
-#define WSAEWOULDBLOCK		EWOULDBLOCK
-#define WSAECONNRESET		ECONNRESET
-#define WSAGetLastError()	errno
+#define SOCKET_ERROR   -1
+#define INVALID_SOCKET -1
+// TODO: Steamify
+#define closesocket       close
+#define ioctlsocket       ioctl
+#define Sleep(x)          usleep(x * 1000)
+#define WSAEWOULDBLOCK    EWOULDBLOCK
+#define WSAECONNRESET     ECONNRESET
+#define WSAGetLastError() errno
 #endif
 
 #ifndef IPPORT_USERRESERVED
@@ -76,108 +79,108 @@ typedef int SOCKET;
 #endif
 
 #ifdef _WIN32
-# include "common/scripting/dap/GameEventEmit.h"
+#include "common/scripting/dap/GameEventEmit.h"
 typedef int socklen_t;
-const char* neterror(void);
+const char *neterror(void);
 #else
 #define neterror() strerror(errno)
 #endif
 
 FARG(host, "Multiplayer", "Designates the machine as the host for a multiplayer game.", "x",
-	"This machine will function as a host for a multiplayer game with x players (including this"
-	" machine). It will wait for other machines to connect using the -join. parameter and then"
-	" start the game when everyone is connected.");
+     "This machine will function as a host for a multiplayer game with x players (including this"
+     " machine). It will wait for other machines to connect using the -join. parameter and then"
+     " start the game when everyone is connected.");
 FARG(join, "Multiplayer", "Connects to a multiplayer host.", "host's IP address[:host's port]",
-	 "Connect to a host for a multiplayer game.");
+     "Connect to a host for a multiplayer game.");
 FARG(dup, "Multiplayer", "Send less player movement commands over the network.", "x",
-	"Causes " GAMENAME " to transmit fewer player movement commands across the network. Valid"
-	" values range from 1–9. For example, -dup 2 would cause " GAMENAME " to send half as many"
-	" movements as normal.");
+     "Causes " GAMENAME " to transmit fewer player movement commands across the network. Valid"
+     " values range from 1–9. For example, -dup 2 would cause " GAMENAME " to send half as many"
+     " movements as normal.");
 FARG(port, "Multiplayer", "Specifies an alternative IP port for a network game.", "x",
-	"Specifies an alternate IP port for this machine to use during a network game. By default,"
-	" port 5029 is used.");
-FARG(password, "", "", "",
-	"");
+     "Specifies an alternate IP port for this machine to use during a network game. By default,"
+     " port 5029 is used.");
+FARG(password, "", "", "", "");
 
 // As per http://support.microsoft.com/kb/q192599/ the standard
 // size for network buffers is 8k.
-constexpr size_t MaxTransmitSize = 8000u;
+constexpr size_t MaxTransmitSize    = 8000u;
 constexpr size_t MinCompressionSize = 10u;
-constexpr size_t MaxPasswordSize = 256u;
+constexpr size_t MaxPasswordSize    = 256u;
 
 enum ENetConnectType : uint8_t
 {
-	PRE_HEARTBEAT,			// Clients are keeping each other's connections alive
-	PRE_CONNECT,			// Sent from guest to host for initial connection
-	PRE_CONNECT_ACK,		// Sent from host to guest to confirm they've been connected
-	PRE_DISCONNECT,			// Sent from host to guest when another guest leaves
-	PRE_USER_INFO,			// Clients are sending each other user infos
-	PRE_USER_INFO_ACK,		// Clients are confirming sent user infos
-	PRE_GAME_INFO,			// Sent from host to guest containing general game info
-	PRE_GAME_INFO_ACK,		// Sent from guest to host confirming game info was gotten
-	PRE_GO,					// Sent from host to guest telling them to start the game
+	PRE_HEARTBEAT,     // Clients are keeping each other's connections alive
+	PRE_CONNECT,       // Sent from guest to host for initial connection
+	PRE_CONNECT_ACK,   // Sent from host to guest to confirm they've been connected
+	PRE_DISCONNECT,    // Sent from host to guest when another guest leaves
+	PRE_USER_INFO,     // Clients are sending each other user infos
+	PRE_USER_INFO_ACK, // Clients are confirming sent user infos
+	PRE_GAME_INFO,     // Sent from host to guest containing general game info
+	PRE_GAME_INFO_ACK, // Sent from guest to host confirming game info was gotten
+	PRE_GO,            // Sent from host to guest telling them to start the game
 
-	PRE_FULL,				// Sent from host to guest if the lobby is full
-	PRE_IN_PROGRESS,		// Sent from host to guest if the game has already started
-	PRE_WRONG_PASSWORD,		// Sent from host to guest if their provided password was wrong
-	PRE_VERIFICATION_ERROR,	// Sent from host to guest if something failed during the verification step.
-	PRE_KICKED,				// Sent from host to guest if the host kicked them from the game
-	PRE_BANNED,				// Sent from host to guest if the host banned them from the game
+	PRE_FULL,               // Sent from host to guest if the lobby is full
+	PRE_IN_PROGRESS,        // Sent from host to guest if the game has already started
+	PRE_WRONG_PASSWORD,     // Sent from host to guest if their provided password was wrong
+	PRE_VERIFICATION_ERROR, // Sent from host to guest if something failed during the verification step.
+	PRE_KICKED,             // Sent from host to guest if the host kicked them from the game
+	PRE_BANNED,             // Sent from host to guest if the host banned them from the game
 };
 
 enum EConnectionStatus
 {
-	CSTAT_NONE,			// Guest isn't connected
-	CSTAT_CONNECTING,	// Guest is trying to connect
-	CSTAT_WAITING,		// Guest is waiting for game info
-	CSTAT_READY,		// Guest is ready to start the game
+	CSTAT_NONE,       // Guest isn't connected
+	CSTAT_CONNECTING, // Guest is trying to connect
+	CSTAT_WAITING,    // Guest is waiting for game info
+	CSTAT_READY,      // Guest is ready to start the game
 };
 
 // These need to be synced with the window backends so information about each
 // client can be properly displayed.
 enum EConnectionFlags : unsigned int
 {
-	CFL_NONE			= 0,
-	CFL_CONSOLEPLAYER	= 1,
-	CFL_HOST			= 1 << 1,
+	CFL_NONE          = 0,
+	CFL_CONSOLEPLAYER = 1,
+	CFL_HOST          = 1 << 1,
 };
 
 struct FConnection
 {
-	EConnectionStatus Status = CSTAT_NONE;
-	sockaddr_in Address = {};
-	uint64_t InfoAck = 0u;
-	bool bHasGameInfo = false;
+	EConnectionStatus Status       = CSTAT_NONE;
+	sockaddr_in       Address      = {};
+	uint64_t          InfoAck      = 0u;
+	bool              bHasGameInfo = false;
 
 	void Clear()
 	{
-		Status = CSTAT_NONE;
-		Address = {};
-		InfoAck = 0u;
+		Status       = CSTAT_NONE;
+		Address      = {};
+		InfoAck      = 0u;
 		bHasGameInfo = false;
 	}
 };
 
-bool netgame = false;
-bool multiplayer = false;
-int consoleplayer = 0;
-int Net_Arbitrator = 0;
+bool         netgame        = false;
+bool         multiplayer    = false;
+int          consoleplayer  = 0;
+int          Net_Arbitrator = 0;
 FClientStack NetworkClients = {};
 
-uint8_t	TicDup = 1u;
-int	MaxClients = 1;
-int RemoteClient = -1;
-size_t NetBufferLength = 0u;
+uint8_t TicDup                = 1u;
+int     MaxClients            = 1;
+int     RemoteClient          = -1;
+size_t  NetBufferLength       = 0u;
 uint8_t NetBuffer[MAX_MSGLEN] = {};
 
-static FRandom		GameIDGen = {};
-static uint8_t		GameID[8] = {};
-static u_short		GamePort = (IPPORT_USERRESERVED + 29);
-static SOCKET		MySocket = INVALID_SOCKET;
-static FConnection	Connected[MAXPLAYERS] = {};
-static uint8_t		TransmitBuffer[MaxTransmitSize] = {};
-static TArray<sockaddr_in> BannedConnections = {};
-static bool bGameStarted = false;
+static FRandom GameIDGen = {};
+static uint8_t GameID[8] = {};
+static u_short GamePort  = (IPPORT_USERRESERVED + 29);
+// TODO: Steamify
+static SOCKET              MySocket                        = INVALID_SOCKET;
+static FConnection         Connected[MAXPLAYERS]           = {};
+static uint8_t             TransmitBuffer[MaxTransmitSize] = {};
+static TArray<sockaddr_in> BannedConnections               = {};
+static bool                bGameStarted                    = false;
 
 CUSTOM_CVAR(String, net_password, "", CVAR_IGNORE)
 {
@@ -189,17 +192,18 @@ CUSTOM_CVAR(String, net_password, "", CVAR_IGNORE)
 }
 
 // Game-specific API
-size_t Net_SetEngineInfo(uint8_t*& stream);
-FVerificationError Net_VerifyEngine(uint8_t*& stream, size_t& offset);
-void Net_SetupUserInfo();
-const char* Net_GetClientName(int client, unsigned int charLimit);
-void Net_SetUserInfo(int client, TArrayView<uint8_t>& stream);
-void Net_ReadUserInfo(int client, TArrayView<uint8_t>& stream);
-void Net_ReadGameInfo(TArrayView<uint8_t>& stream);
-void Net_SetGameInfo(TArrayView<uint8_t>& stream);
+size_t             Net_SetEngineInfo(uint8_t *&stream);
+FVerificationError Net_VerifyEngine(uint8_t *&stream, size_t &offset);
+void               Net_SetupUserInfo();
+const char        *Net_GetClientName(int client, unsigned int charLimit);
+void               Net_SetUserInfo(int client, TArrayView<uint8_t> &stream);
+void               Net_ReadUserInfo(int client, TArrayView<uint8_t> &stream);
+void               Net_ReadGameInfo(TArrayView<uint8_t> &stream);
+void               Net_SetGameInfo(TArrayView<uint8_t> &stream);
 
 static SOCKET CreateUDPSocket()
 {
+	// TODO: Steamify
 	SOCKET s = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (s == INVALID_SOCKET)
 		I_FatalError("Couldn't create socket: %s", neterror());
@@ -209,24 +213,25 @@ static SOCKET CreateUDPSocket()
 
 static void BindToLocalPort(SOCKET s, u_short port)
 {
-	sockaddr_in address = {};
-	address.sin_family = AF_INET;
+	sockaddr_in address     = {};
+	address.sin_family      = AF_INET;
 	address.sin_addr.s_addr = INADDR_ANY;
-	address.sin_port = htons(port);
+	address.sin_port        = htons(port);
 
+	// TODO: Steamify
 	int v = bind(s, (sockaddr *)&address, sizeof(address));
 	if (v == SOCKET_ERROR)
 		I_FatalError("Couldn't bind to port: %s", neterror());
 }
 
-static void BuildAddress(sockaddr_in& address, const char* addrName)
+static void BuildAddress(sockaddr_in &address, const char *addrName)
 {
-	FString target = {};
-	u_short port = GamePort;
-	const char* portName = strchr(addrName, ':');
+	FString     target   = {};
+	u_short     port     = GamePort;
+	const char *portName = strchr(addrName, ':');
 	if (portName != nullptr)
 	{
-		target = FString(addrName, portName - addrName);
+		target                 = FString(addrName, portName - addrName);
 		u_short portConversion = atoi(portName + 1);
 		if (!portConversion)
 			Printf("Malformed port: %s (using %d)\n", portName + 1, GamePort);
@@ -250,18 +255,18 @@ static void BuildAddress(sockaddr_in& address, const char* addrName)
 	}
 
 	address.sin_family = AF_INET;
-	address.sin_port = htons(port);
+	address.sin_port   = htons(port);
 	if (!isNamed)
 	{
 		address.sin_addr.s_addr = inet_addr(target.GetChars());
 	}
 	else
 	{
-		hostent* hostEntry = gethostbyname(target.GetChars());
+		hostent *hostEntry = gethostbyname(target.GetChars());
 		if (hostEntry == nullptr)
 			I_FatalError("gethostbyname: Couldn't find %s\n%s", target.GetChars(), neterror());
 
-		address.sin_addr.s_addr = *(int*)hostEntry->h_addr_list[0];
+		address.sin_addr.s_addr = *(int *)hostEntry->h_addr_list[0];
 	}
 }
 
@@ -269,58 +274,62 @@ int netInitCount = 0;
 
 void StartNetworkLean()
 {
-	#ifdef _WIN32
+#ifdef _WIN32
 	if (!DebugServer::RuntimeEvents::IsDebugServerRunning())
 	{
 		netInitCount++;
-		if(netInitCount == 1)
+		if (netInitCount == 1)
 		{
 			WSADATA data;
 			if (WSAStartup(MAKEWORD(2, 2), &data))
 				I_FatalError("Couldn't initialize Windows sockets");
 		}
 	}
-	#else
+#else
 	netInitCount++;
-	#endif
+#endif
 }
 
 static void CloseNetworkLean()
 {
-	if(netInitCount == 0) return;
+	if (netInitCount == 0)
+		return;
 	netInitCount--;
-	#ifdef _WIN32
-	if(netInitCount == 0)
+#ifdef _WIN32
+	if (netInitCount == 0)
 	{
 		if (!DebugServer::RuntimeEvents::IsDebugServerRunning())
 		{
 			WSACleanup();
 		}
 	}
-	#endif
+#endif
 }
 
 bool IsNetworkStartedLean()
 {
-	#ifdef _WIN32
+#ifdef _WIN32
 	return netInitCount > 0 || DebugServer::RuntimeEvents::IsDebugServerRunning();
-	#else
+#else
 	return netInitCount > 0;
-	#endif
+#endif
 }
 
 static void StartNetwork(bool autoPort)
 {
-	if(!IsNetworkStartedLean()) StartNetworkLean();
+	if (!IsNetworkStartedLean())
+		StartNetworkLean();
 
-	netgame = true;
+	netgame     = true;
 	multiplayer = true;
+
+	// TODO: Steamify
 	MySocket = CreateUDPSocket();
 	BindToLocalPort(MySocket, autoPort ? 0 : GamePort);
 
 	u_long trueVal = 1u;
 #ifndef __sun
-	ioctlsocket(MySocket, FIONBIO, &trueVal);
+	// ioctlsocket(MySocket, FIONBIO, &trueVal);
 #else
 	fcntl(MySocket, F_SETFL, trueVal | O_NONBLOCK);
 #endif
@@ -332,7 +341,7 @@ void CloseNetwork()
 	{
 		closesocket(MySocket);
 		MySocket = INVALID_SOCKET;
-		netgame = false;
+		netgame  = false;
 	}
 
 	CloseNetworkLean();
@@ -346,7 +355,7 @@ static void GenerateGameID()
 
 // Print a network-related message to the console. This doesn't print to the window so should
 // not be used for that and is mainly for logging.
-static void I_NetLog(const char* text, ...)
+static void I_NetLog(const char *text, ...)
 {
 	// todo: use better abstraction once everything is migrated to in-game start screens.
 #if defined _WIN32 || defined __APPLE__
@@ -367,13 +376,13 @@ static void I_NetLog(const char* text, ...)
 }
 
 // Gracefully closes the net window so that any error messaging can be properly displayed.
-static void I_NetError(const char* error)
+static void I_NetError(const char *error)
 {
 	NetStartWindow::NetClose();
 	I_FatalError("%s", error);
 }
 
-static void I_NetInit(const char* msg, bool host)
+static void I_NetInit(const char *msg, bool host)
 {
 	Printf("NetLobby:: %s\n", msg);
 	NetStartWindow::NetInit(msg, host);
@@ -381,7 +390,7 @@ static void I_NetInit(const char* msg, bool host)
 
 // todo: later these must be dispatched by the main menu, not the start screen.
 // Updates the general status of the lobby.
-static void I_NetMessage(const char* msg)
+static void I_NetMessage(const char *msg)
 {
 	Printf("NetLobby:: %s\n", msg);
 	NetStartWindow::NetMessage(msg);
@@ -389,7 +398,7 @@ static void I_NetMessage(const char* msg)
 
 // Listen for incoming connections while the lobby is active. The main thread needs to be locked up
 // here to prevent the engine from continuing to start the game until everyone is ready.
-static bool I_NetLoop(bool (*loopCallback)(void*), void* data)
+static bool I_NetLoop(bool (*loopCallback)(void *), void *data)
 {
 	return NetStartWindow::NetLoop(loopCallback, data);
 }
@@ -399,7 +408,7 @@ static void I_NetClientConnected(int client, unsigned int charLimit = 0u)
 {
 	Printf("NetLobby:: Client '%s' connected.\n", Net_GetClientName(client, 0u));
 
-	const char* name = Net_GetClientName(client, charLimit);
+	const char  *name  = Net_GetClientName(client, charLimit);
 	unsigned int flags = CFL_NONE;
 	if (client == 0)
 		flags |= CFL_HOST;
@@ -431,7 +440,7 @@ static bool I_ShouldStartNetGame()
 	return NetStartWindow::ShouldStartNet();
 }
 
-static void I_GetKickClients(TArray<int>& clients)
+static void I_GetKickClients(TArray<int> &clients)
 {
 	clients.Clear();
 
@@ -440,7 +449,7 @@ static void I_GetKickClients(TArray<int>& clients)
 		clients.Push(c);
 }
 
-static void I_GetBanClients(TArray<int>& clients)
+static void I_GetBanClients(TArray<int> &clients)
 {
 	clients.Clear();
 
@@ -459,7 +468,7 @@ void I_ClearClient(size_t client)
 	Connected[client].Clear();
 }
 
-static int FindClient(const sockaddr_in& address)
+static int FindClient(const sockaddr_in &address)
 {
 	int i = 0;
 	for (; i < MaxClients; ++i)
@@ -467,8 +476,8 @@ static int FindClient(const sockaddr_in& address)
 		if (Connected[i].Status == CSTAT_NONE)
 			continue;
 
-		if (address.sin_addr.s_addr == Connected[i].Address.sin_addr.s_addr
-			&& address.sin_port == Connected[i].Address.sin_port)
+		if (address.sin_addr.s_addr == Connected[i].Address.sin_addr.s_addr &&
+		    address.sin_port == Connected[i].Address.sin_port)
 		{
 			break;
 		}
@@ -477,7 +486,7 @@ static int FindClient(const sockaddr_in& address)
 	return i >= MaxClients ? -1 : i;
 }
 
-static void SendPacket(const sockaddr_in& to)
+static void SendPacket(const sockaddr_in &to)
 {
 	// Huge packets should be sent out as sequences, not as one big packet, otherwise it's prone
 	// to high amounts of congestion and reordering needed.
@@ -486,11 +495,11 @@ static void SendPacket(const sockaddr_in& to)
 
 	assert(!(NetBuffer[0] & NCMD_COMPRESSED));
 
-	uint8_t* dataStart = &TransmitBuffer[4];
-	uLong size = MaxTransmitSize - 5u;
+	uint8_t *dataStart = &TransmitBuffer[4];
+	uLong    size      = MaxTransmitSize - 5u;
 	if (NetBufferLength >= MinCompressionSize)
 	{
-		*dataStart = NetBuffer[0] | NCMD_COMPRESSED;
+		*dataStart    = NetBuffer[0] | NCMD_COMPRESSED;
 		const int res = compress2(dataStart + 1, &size, NetBuffer + 1, NetBufferLength - 1u, 9);
 		if (res != Z_OK)
 			I_Error("Net compression failed (zlib error %d)", res);
@@ -507,22 +516,25 @@ static void SendPacket(const sockaddr_in& to)
 		I_Error("Failed to compress data down to acceptable transmission size");
 
 	// If a connection packet, don't check the game id since they might not have it yet.
-	const uint32_t crc = (NetBuffer[0] & NCMD_SETUP) ? CalcCRC32(dataStart, size) : AddCRC32(CalcCRC32(dataStart, size), GameID, std::extent_v<decltype(GameID)>);
-	TransmitBuffer[0] = crc >> 24;
-	TransmitBuffer[1] = crc >> 16;
-	TransmitBuffer[2] = crc >> 8;
-	TransmitBuffer[3] = crc;
+	const uint32_t crc = (NetBuffer[0] & NCMD_SETUP)
+	                         ? CalcCRC32(dataStart, size)
+	                         : AddCRC32(CalcCRC32(dataStart, size), GameID, std::extent_v<decltype(GameID)>);
+	TransmitBuffer[0]  = crc >> 24;
+	TransmitBuffer[1]  = crc >> 16;
+	TransmitBuffer[2]  = crc >> 8;
+	TransmitBuffer[3]  = crc;
 
-	sendto(MySocket, (const char*)TransmitBuffer, size + 4, 0, (const sockaddr*)&to, sizeof(to));
+	// TODO: Steamify
+	sendto(MySocket, (const char *)TransmitBuffer, size + 4, 0, (const sockaddr *)&to, sizeof(to));
 }
 
-static void GetPacket(sockaddr_in* const from = nullptr)
+static void GetPacket(sockaddr_in *const from = nullptr)
 {
 	sockaddr_in fromAddress;
-	socklen_t fromSize = sizeof(fromAddress);
+	socklen_t   fromSize = sizeof(fromAddress);
 
-	int msgSize = recvfrom(MySocket, (char *)TransmitBuffer, MaxTransmitSize, 0,
-				  (sockaddr *)&fromAddress, &fromSize);
+	// TODO: Steamify
+	int msgSize = recvfrom(MySocket, (char *)TransmitBuffer, MaxTransmitSize, 0, (sockaddr *)&fromAddress, &fromSize);
 
 	int client = FindClient(fromAddress);
 	if (client >= 0 && msgSize == SOCKET_ERROR)
@@ -532,7 +544,7 @@ static void GetPacket(sockaddr_in* const from = nullptr)
 		{
 			if (consoleplayer == -1)
 			{
-				client = -1;
+				client  = -1;
 				msgSize = 0;
 			}
 			else
@@ -543,7 +555,7 @@ static void GetPacket(sockaddr_in* const from = nullptr)
 					I_NetError("Host unexpectedly disconnected");
 
 				NetBuffer[0] = NCMD_EXIT;
-				msgSize = 1;
+				msgSize      = 1;
 			}
 		}
 		else if (err != WSAEWOULDBLOCK)
@@ -552,33 +564,36 @@ static void GetPacket(sockaddr_in* const from = nullptr)
 		}
 		else
 		{
-			client = -1;
+			client  = -1;
 			msgSize = 0;
 		}
 	}
 	else if (msgSize > 0)
 	{
-		const uint8_t* dataStart = &TransmitBuffer[4];
+		const uint8_t *dataStart = &TransmitBuffer[4];
 		if (client == -1 && !(*dataStart & NCMD_SETUP))
 		{
 			msgSize = 0;
 		}
 		else if (client == -1 && bGameStarted)
 		{
-			NetBuffer[0] = NCMD_SETUP;
-			NetBuffer[1] = PRE_IN_PROGRESS;
+			NetBuffer[0]    = NCMD_SETUP;
+			NetBuffer[1]    = PRE_IN_PROGRESS;
 			NetBufferLength = 2u;
 			SendPacket(fromAddress);
 			msgSize = 0;
 		}
 		else
 		{
-			const uint32_t check = (*dataStart & NCMD_SETUP) ? CalcCRC32(dataStart, msgSize - 4) : AddCRC32(CalcCRC32(dataStart, msgSize - 4), GameID, std::extent_v<decltype(GameID)>);
-			const uint32_t crc = (TransmitBuffer[0] << 24) | (TransmitBuffer[1] << 16) | (TransmitBuffer[2] << 8) | TransmitBuffer[3];
+			const uint32_t check = (*dataStart & NCMD_SETUP) ? CalcCRC32(dataStart, msgSize - 4)
+			                                                 : AddCRC32(CalcCRC32(dataStart, msgSize - 4), GameID,
+			                                                            std::extent_v<decltype(GameID)>);
+			const uint32_t crc =
+				(TransmitBuffer[0] << 24) | (TransmitBuffer[1] << 16) | (TransmitBuffer[2] << 8) | TransmitBuffer[3];
 			if (check != crc)
 			{
 				DPrintf(DMSG_NOTIFY, "Checksum on packet failed: expected %u, got %u", check, crc);
-				client = -1;
+				client  = -1;
 				msgSize = 0;
 			}
 			else
@@ -587,11 +602,11 @@ static void GetPacket(sockaddr_in* const from = nullptr)
 				if (*dataStart & NCMD_COMPRESSED)
 				{
 					uLongf size = MAX_MSGLEN - 1;
-					int err = uncompress(NetBuffer + 1, &size, dataStart + 1, msgSize - 5);
+					int    err  = uncompress(NetBuffer + 1, &size, dataStart + 1, msgSize - 5);
 					if (err != Z_OK)
 					{
 						Printf("Net decompression failed (zlib error %s)\n", M_ZLibError(err).GetChars());
-						client = -1;
+						client  = -1;
 						msgSize = 0;
 					}
 					else
@@ -612,7 +627,7 @@ static void GetPacket(sockaddr_in* const from = nullptr)
 		client = -1;
 	}
 
-	RemoteClient = client;
+	RemoteClient    = client;
 	NetBufferLength = max<int>(msgSize, 0);
 	if (from != nullptr)
 		*from = fromAddress;
@@ -645,39 +660,39 @@ static bool ClientGotAck(size_t client, size_t from)
 	return (Connected[client].InfoAck & ((uint64_t)1u << from));
 }
 
-static bool GetConnection(sockaddr_in& from)
+static bool GetConnection(sockaddr_in &from)
 {
 	GetPacket(&from);
 	return NetBufferLength > 0;
 }
 
-static void RejectConnection(const sockaddr_in& to, ENetConnectType reason)
+static void RejectConnection(const sockaddr_in &to, ENetConnectType reason)
 {
-	NetBuffer[0] = NCMD_SETUP;
-	NetBuffer[1] = reason;
+	NetBuffer[0]    = NCMD_SETUP;
+	NetBuffer[1]    = reason;
 	NetBufferLength = 2u;
 
 	SendPacket(to);
 }
 
-static void SendVerificationError(const sockaddr_in& to, const FVerificationError& error)
+static void SendVerificationError(const sockaddr_in &to, const FVerificationError &error)
 {
 	NetBuffer[0] = NCMD_SETUP;
 	NetBuffer[1] = PRE_VERIFICATION_ERROR;
 	NetBuffer[2] = error.Error;
 	if (error.Error == FVerificationError::VE_ENGINE)
 	{
-		NetBuffer[3] = error.Major;
-		NetBuffer[4] = error.Minor;
-		NetBuffer[5] = error.Revision;
-		NetBuffer[6] = error.NetMajor;
-		NetBuffer[7] = error.NetMinor;
-		NetBuffer[8] = error.NetRevision;
+		NetBuffer[3]    = error.Major;
+		NetBuffer[4]    = error.Minor;
+		NetBuffer[5]    = error.Revision;
+		NetBuffer[6]    = error.NetMajor;
+		NetBuffer[7]    = error.NetMinor;
+		NetBuffer[8]    = error.NetRevision;
 		NetBufferLength = 9u;
 	}
 	else
 	{
-		const TArray<FString>* ar = nullptr;
+		const TArray<FString> *ar = nullptr;
 		if (error.Error == FVerificationError::VE_FILE_UNKNOWN)
 			ar = &error.UnknownFiles;
 		else if (error.Error == FVerificationError::VE_FILE_ORDER)
@@ -689,8 +704,8 @@ static void SendVerificationError(const sockaddr_in& to, const FVerificationErro
 		NetBuffer[4] = (ar->Size() >> 16);
 		NetBuffer[5] = (ar->Size() >> 8);
 		NetBuffer[6] = ar->Size();
-		size_t i = 7u;
-		for (auto& file : *ar)
+		size_t i     = 7u;
+		for (auto &file : *ar)
 		{
 			memcpy(&NetBuffer[i], file.GetChars(), file.Len() + 1u);
 			i += file.Len() + 1u;
@@ -701,9 +716,9 @@ static void SendVerificationError(const sockaddr_in& to, const FVerificationErro
 	SendPacket(to);
 }
 
-static void AddClientConnection(const sockaddr_in& from, int client)
+static void AddClientConnection(const sockaddr_in &from, int client)
 {
-	Connected[client].Status = CSTAT_CONNECTING;
+	Connected[client].Status  = CSTAT_CONNECTING;
 	Connected[client].Address = from;
 	NetworkClients += client;
 	I_NetLog("Client %u joined the lobby", client);
@@ -728,9 +743,9 @@ static void RemoveClientConnection(int client)
 	I_NetLog("Client %u left the lobby", client);
 
 	// Let everyone else know the user left as well.
-	NetBuffer[0] = NCMD_SETUP;
-	NetBuffer[1] = PRE_DISCONNECT;
-	NetBuffer[2] = client;
+	NetBuffer[0]    = NCMD_SETUP;
+	NetBuffer[1]    = PRE_DISCONNECT;
+	NetBuffer[2]    = client;
 	NetBufferLength = 3u;
 
 	for (int i = 1; i < MaxClients; ++i)
@@ -751,18 +766,18 @@ void HandleIncomingConnection()
 
 	if (Connected[RemoteClient].Status == CSTAT_READY)
 	{
-		NetBuffer[0] = NCMD_SETUP;
-		NetBuffer[1] = PRE_GO;
+		NetBuffer[0]    = NCMD_SETUP;
+		NetBuffer[1]    = PRE_GO;
 		NetBufferLength = 2u;
 		SendPacket(Connected[RemoteClient].Address);
 	}
 }
 
-static bool Host_CheckForConnections(void* connected)
+static bool Host_CheckForConnections(void *connected)
 {
-	const bool forceStarting = I_ShouldStartNetGame();
-	const bool hasPassword = strlen(net_password) > 0;
-	int* connectedPlayers = (int*)connected;
+	const bool forceStarting    = I_ShouldStartNetGame();
+	const bool hasPassword      = strlen(net_password) > 0;
+	int       *connectedPlayers = (int *)connected;
 
 	TArray<int> toBoot = {};
 	I_GetKickClients(toBoot);
@@ -819,10 +834,10 @@ static bool Host_CheckForConnections(void* connected)
 			if (RemoteClient >= 0)
 				continue;
 
-			uint8_t* engineInfo = &NetBuffer[2];
-			size_t passwordOffset = 0u;
-			size_t banned = 0u;
-			FVerificationError error = {};
+			uint8_t           *engineInfo     = &NetBuffer[2];
+			size_t             passwordOffset = 0u;
+			size_t             banned         = 0u;
+			FVerificationError error          = {};
 			for (; banned < BannedConnections.Size(); ++banned)
 			{
 				if (BannedConnections[banned].sin_addr.s_addr == from.sin_addr.s_addr)
@@ -845,7 +860,7 @@ static bool Host_CheckForConnections(void* connected)
 			{
 				RejectConnection(from, PRE_IN_PROGRESS);
 			}
-			else if (hasPassword && strcmp(net_password, (const char*)&NetBuffer[2u + passwordOffset]))
+			else if (hasPassword && strcmp(net_password, (const char *)&NetBuffer[2u + passwordOffset]))
 			{
 				RejectConnection(from, PRE_WRONG_PASSWORD);
 			}
@@ -867,7 +882,7 @@ static bool Host_CheckForConnections(void* connected)
 		{
 			if (Connected[RemoteClient].Status == CSTAT_CONNECTING)
 			{
-				TArrayView<uint8_t> stream = TArrayView(&NetBuffer[2], MAX_MSGLEN-2);
+				TArrayView<uint8_t> stream = TArrayView(&NetBuffer[2], MAX_MSGLEN - 2);
 				Net_ReadUserInfo(RemoteClient, stream);
 				Connected[RemoteClient].Status = CSTAT_WAITING;
 				I_NetClientConnected(RemoteClient, 16u);
@@ -884,21 +899,21 @@ static bool Host_CheckForConnections(void* connected)
 	}
 
 	const size_t addrSize = sizeof(sockaddr_in);
-	bool ready = true;
-	NetBuffer[0] = NCMD_SETUP;
+	bool         ready    = true;
+	NetBuffer[0]          = NCMD_SETUP;
 	for (int client = 1; client < MaxClients; ++client)
 	{
-		auto& con = Connected[client];
+		auto &con = Connected[client];
 		// If we're starting before the lobby is full, only check against connected clients.
 		if (con.Status != CSTAT_READY && (!forceStarting || con.Status != CSTAT_NONE))
 			ready = false;
 
 		if (con.Status == CSTAT_CONNECTING)
 		{
-			NetBuffer[1] = PRE_CONNECT_ACK;
-			NetBuffer[2] = client;
-			NetBuffer[3] = *connectedPlayers;
-			NetBuffer[4] = MaxClients;
+			NetBuffer[1]    = PRE_CONNECT_ACK;
+			NetBuffer[2]    = client;
+			NetBuffer[3]    = *connectedPlayers;
+			NetBuffer[4]    = MaxClients;
 			NetBufferLength = 5u;
 			SendPacket(con.Address);
 		}
@@ -907,7 +922,7 @@ static bool Host_CheckForConnections(void* connected)
 			bool clientReady = true;
 			if (!ClientGotAck(client, client))
 			{
-				NetBuffer[1] = PRE_USER_INFO_ACK;
+				NetBuffer[1]    = PRE_USER_INFO_ACK;
 				NetBufferLength = 2u;
 				SendPacket(con.Address);
 				clientReady = false;
@@ -937,7 +952,7 @@ static bool Host_CheckForConnections(void* connected)
 				{
 					if (Connected[i].Status >= CSTAT_WAITING)
 					{
-						NetBuffer[2] = uint8_t(i);
+						NetBuffer[2]    = uint8_t(i);
 						NetBufferLength = 3u;
 						// Client will already have the host connection information.
 						if (i > 0)
@@ -946,7 +961,8 @@ static bool Host_CheckForConnections(void* connected)
 							NetBufferLength += addrSize;
 						}
 
-						TArrayView<uint8_t> stream = TArrayView(&NetBuffer[NetBufferLength], MAX_MSGLEN - NetBufferLength);
+						TArrayView<uint8_t> stream =
+							TArrayView(&NetBuffer[NetBufferLength], MAX_MSGLEN - NetBufferLength);
 						Net_SetUserInfo(i, stream);
 						NetBufferLength += stream.Data() - &NetBuffer[NetBufferLength];
 						SendPacket(con.Address);
@@ -963,9 +979,9 @@ static bool Host_CheckForConnections(void* connected)
 		}
 		else if (con.Status == CSTAT_READY)
 		{
-			NetBuffer[1] = PRE_HEARTBEAT;
-			NetBuffer[2] = *connectedPlayers;
-			NetBuffer[3] = MaxClients;
+			NetBuffer[1]    = PRE_HEARTBEAT;
+			NetBuffer[2]    = *connectedPlayers;
+			NetBuffer[3]    = MaxClients;
 			NetBufferLength = 4u;
 			SendPacket(con.Address);
 		}
@@ -976,7 +992,7 @@ static bool Host_CheckForConnections(void* connected)
 
 static void SendAbort()
 {
-	NetBuffer[0] = NCMD_EXIT;
+	NetBuffer[0]    = NCMD_EXIT;
 	NetBufferLength = 1u;
 
 	if (consoleplayer == 0)
@@ -996,7 +1012,7 @@ static void SendAbort()
 static bool HostGame(int arg)
 {
 	if (arg >= Args->NumArgs() || !(MaxClients = atoi(Args->GetArg(arg))))
-	{	// No player count specified, assume 2
+	{ // No player count specified, assume 2
 		MaxClients = 2u;
 	}
 
@@ -1011,7 +1027,7 @@ static bool HostGame(int arg)
 	// If only 1 player, don't bother starting the network
 	if (MaxClients == 1)
 	{
-		TicDup = 1u;
+		TicDup      = 1u;
 		multiplayer = true;
 		return true;
 	}
@@ -1023,7 +1039,7 @@ static bool HostGame(int arg)
 
 	// Wait for the lobby to be full.
 	int connectedPlayers = 1;
-	if (!I_NetLoop(Host_CheckForConnections, (void*)&connectedPlayers))
+	if (!I_NetLoop(Host_CheckForConnections, (void *)&connectedPlayers))
 	{
 		SendAbort();
 		throw CExitEvent(0);
@@ -1039,14 +1055,14 @@ static bool HostGame(int arg)
 	{
 		CloseNetwork();
 		MaxClients = 1;
-		TicDup = 1u;
+		TicDup     = 1u;
 		return true;
 	}
 
 	I_NetLog("Go");
 
-	NetBuffer[0] = NCMD_SETUP;
-	NetBuffer[1] = PRE_GO;
+	NetBuffer[0]    = NCMD_SETUP;
+	NetBuffer[1]    = PRE_GO;
 	NetBufferLength = 2u;
 	for (size_t client = 1u; client < (size_t)MaxClients; ++client)
 	{
@@ -1063,8 +1079,8 @@ static FString ReadVerificationError(TArrayView<uint8_t> stream)
 {
 	if (stream[0] == FVerificationError::VE_ENGINE)
 	{
-		return FStringf("Engine mismatch: host expected %d.%d.%d, got %d.%d.%d",
-						stream[1], stream[2], stream[3], stream[4], stream[5], stream[6]);
+		return FStringf("Engine mismatch: host expected %d.%d.%d, got %d.%d.%d", stream[1], stream[2], stream[3],
+		                stream[4], stream[5], stream[6]);
 	}
 
 	TMap<FString, FString> files = {};
@@ -1072,16 +1088,16 @@ static FString ReadVerificationError(TArrayView<uint8_t> stream)
 	{
 		if (!fileSystem.IsOptionalResource(i))
 		{
-			const FString crc = fileSystem.GetResourceHash(i);
-			FString name = fileSystem.GetResourceFileName(i);
+			const FString crc  = fileSystem.GetResourceHash(i);
+			FString       name = fileSystem.GetResourceFileName(i);
 			FixPathSeperator(name);
-			auto a = name.Split('/', FString::TOK_SKIPEMPTY);
+			auto a     = name.Split('/', FString::TOK_SKIPEMPTY);
 			files[crc] = a.Last();
 		}
 	}
 
-	const size_t size = (stream[1] << 24) | (stream[2] << 16) | (stream[3] << 8) | stream[4];
-	size_t offset = 5;
+	const size_t size   = (stream[1] << 24) | (stream[2] << 16) | (stream[3] << 8) | stream[4];
+	size_t       offset = 5;
 	if (stream[0] == FVerificationError::VE_FILE_UNKNOWN)
 	{
 		FString er = "Host found unknown files:";
@@ -1127,11 +1143,11 @@ static FString ReadVerificationError(TArrayView<uint8_t> stream)
 	return "Unknown error";
 }
 
-static bool Guest_ContactHost(void* unused)
+static bool Guest_ContactHost(void *unused)
 {
 	// Listen for a reply.
 	const size_t addrSize = sizeof(sockaddr_in);
-	sockaddr_in from;
+	sockaddr_in  from;
 	while (GetConnection(from))
 	{
 		if (RemoteClient != 0)
@@ -1169,7 +1185,7 @@ static bool Guest_ContactHost(void* unused)
 		}
 		else if (NetBuffer[1] == PRE_VERIFICATION_ERROR)
 		{
-			I_NetError(ReadVerificationError(TArrayView{ &NetBuffer[2], (unsigned)(NetBufferLength - 2u) }).GetChars());
+			I_NetError(ReadVerificationError(TArrayView{&NetBuffer[2], (unsigned)(NetBufferLength - 2u)}).GetChars());
 		}
 		else if (NetBuffer[1] == PRE_KICKED)
 		{
@@ -1209,9 +1225,9 @@ static bool Guest_ContactHost(void* unused)
 				I_NetMessage("Waiting for game to start");
 			}
 
-			NetBuffer[0] = NCMD_SETUP;
-			NetBuffer[1] = PRE_USER_INFO_ACK;
-			NetBuffer[2] = consoleplayer;
+			NetBuffer[0]    = NCMD_SETUP;
+			NetBuffer[1]    = PRE_USER_INFO_ACK;
+			NetBuffer[2]    = consoleplayer;
 			NetBufferLength = 3u;
 			SendPacket(from);
 		}
@@ -1226,8 +1242,8 @@ static bool Guest_ContactHost(void* unused)
 				Connected[consoleplayer].bHasGameInfo = true;
 			}
 
-			NetBuffer[0] = NCMD_SETUP;
-			NetBuffer[1] = PRE_GAME_INFO_ACK;
+			NetBuffer[0]    = NCMD_SETUP;
+			NetBuffer[1]    = PRE_GAME_INFO_ACK;
 			NetBufferLength = 2u;
 			SendPacket(from);
 		}
@@ -1255,9 +1271,9 @@ static bool Guest_ContactHost(void* unused)
 				I_NetClientConnected(c, 16u);
 			}
 
-			NetBuffer[0] = NCMD_SETUP;
-			NetBuffer[1] = PRE_USER_INFO_ACK;
-			NetBuffer[2] = c;
+			NetBuffer[0]    = NCMD_SETUP;
+			NetBuffer[1]    = PRE_USER_INFO_ACK;
+			NetBuffer[2]    = c;
 			NetBufferLength = 3u;
 			SendPacket(from);
 		}
@@ -1272,20 +1288,20 @@ static bool Guest_ContactHost(void* unused)
 	NetBuffer[0] = NCMD_SETUP;
 	if (consoleplayer == -1)
 	{
-		NetBuffer[1] = PRE_CONNECT;
-		uint8_t* engineInfo = &NetBuffer[2];
-		const size_t end = 2u + Net_SetEngineInfo(engineInfo);
-		const size_t passSize = strlen(net_password) + 1;
+		NetBuffer[1]            = PRE_CONNECT;
+		uint8_t     *engineInfo = &NetBuffer[2];
+		const size_t end        = 2u + Net_SetEngineInfo(engineInfo);
+		const size_t passSize   = strlen(net_password) + 1;
 		memcpy(&NetBuffer[end], net_password, passSize);
 		NetBufferLength = end + passSize;
 		SendPacket(Connected[0].Address);
 	}
 	else
 	{
-		auto& con = Connected[consoleplayer];
+		auto &con = Connected[consoleplayer];
 		if (con.Status == CSTAT_CONNECTING)
 		{
-			NetBuffer[1] = PRE_USER_INFO;
+			NetBuffer[1]    = PRE_USER_INFO;
 			NetBufferLength = 2u;
 
 			TArrayView<uint8_t> stream = TArrayView(&NetBuffer[NetBufferLength], MAX_MSGLEN - NetBufferLength);
@@ -1295,7 +1311,7 @@ static bool Guest_ContactHost(void* unused)
 		}
 		else if (con.Status == CSTAT_WAITING)
 		{
-			NetBuffer[1] = PRE_HEARTBEAT;
+			NetBuffer[1]    = PRE_HEARTBEAT;
 			NetBufferLength = 2u;
 			SendPacket(Connected[0].Address);
 		}
@@ -1306,8 +1322,7 @@ static bool Guest_ContactHost(void* unused)
 
 static bool JoinGame(int arg)
 {
-	if (arg >= Args->NumArgs()
-		|| Args->GetArg(arg)[0] == '-' || Args->GetArg(arg)[0] == '+')
+	if (arg >= Args->NumArgs() || Args->GetArg(arg)[0] == '-' || Args->GetArg(arg)[0] == '+')
 	{
 		I_FatalError("You need to specify the host machine's address");
 	}
@@ -1347,7 +1362,7 @@ static bool JoinGame(int arg)
 bool I_InitNetwork()
 {
 	// set up for network
-	const char* v = Args->CheckValue(FArg_dup);
+	const char *v = Args->CheckValue(FArg_dup);
 	if (v != nullptr)
 		TicDup = clamp<int>(atoi(v), 1, MAXTICDUP);
 
@@ -1389,58 +1404,101 @@ bool I_InitNetwork()
 }
 
 #ifdef _WIN32
-const char* neterror()
+const char *neterror()
 {
 	static char neterr[16];
-	int			code;
+	int         code;
 
-	switch (code = WSAGetLastError()) {
-		case WSAEACCES:				return "EACCES";
-		case WSAEADDRINUSE:			return "EADDRINUSE";
-		case WSAEADDRNOTAVAIL:		return "EADDRNOTAVAIL";
-		case WSAEAFNOSUPPORT:		return "EAFNOSUPPORT";
-		case WSAEALREADY:			return "EALREADY";
-		case WSAECONNABORTED:		return "ECONNABORTED";
-		case WSAECONNREFUSED:		return "ECONNREFUSED";
-		case WSAECONNRESET:			return "ECONNRESET";
-		case WSAEDESTADDRREQ:		return "EDESTADDRREQ";
-		case WSAEFAULT:				return "EFAULT";
-		case WSAEHOSTDOWN:			return "EHOSTDOWN";
-		case WSAEHOSTUNREACH:		return "EHOSTUNREACH";
-		case WSAEINPROGRESS:		return "EINPROGRESS";
-		case WSAEINTR:				return "EINTR";
-		case WSAEINVAL:				return "EINVAL";
-		case WSAEISCONN:			return "EISCONN";
-		case WSAEMFILE:				return "EMFILE";
-		case WSAEMSGSIZE:			return "EMSGSIZE";
-		case WSAENETDOWN:			return "ENETDOWN";
-		case WSAENETRESET:			return "ENETRESET";
-		case WSAENETUNREACH:		return "ENETUNREACH";
-		case WSAENOBUFS:			return "ENOBUFS";
-		case WSAENOPROTOOPT:		return "ENOPROTOOPT";
-		case WSAENOTCONN:			return "ENOTCONN";
-		case WSAENOTSOCK:			return "ENOTSOCK";
-		case WSAEOPNOTSUPP:			return "EOPNOTSUPP";
-		case WSAEPFNOSUPPORT:		return "EPFNOSUPPORT";
-		case WSAEPROCLIM:			return "EPROCLIM";
-		case WSAEPROTONOSUPPORT:	return "EPROTONOSUPPORT";
-		case WSAEPROTOTYPE:			return "EPROTOTYPE";
-		case WSAESHUTDOWN:			return "ESHUTDOWN";
-		case WSAESOCKTNOSUPPORT:	return "ESOCKTNOSUPPORT";
-		case WSAETIMEDOUT:			return "ETIMEDOUT";
-		case WSAEWOULDBLOCK:		return "EWOULDBLOCK";
-		case WSAHOST_NOT_FOUND:		return "HOST_NOT_FOUND";
-		case WSANOTINITIALISED:		return "NOTINITIALISED";
-		case WSANO_DATA:			return "NO_DATA";
-		case WSANO_RECOVERY:		return "NO_RECOVERY";
-		case WSASYSNOTREADY:		return "SYSNOTREADY";
-		case WSATRY_AGAIN:			return "TRY_AGAIN";
-		case WSAVERNOTSUPPORTED:	return "VERNOTSUPPORTED";
-		case WSAEDISCON:			return "EDISCON";
+	switch (code = WSAGetLastError())
+	{
+	case WSAEACCES:
+		return "EACCES";
+	case WSAEADDRINUSE:
+		return "EADDRINUSE";
+	case WSAEADDRNOTAVAIL:
+		return "EADDRNOTAVAIL";
+	case WSAEAFNOSUPPORT:
+		return "EAFNOSUPPORT";
+	case WSAEALREADY:
+		return "EALREADY";
+	case WSAECONNABORTED:
+		return "ECONNABORTED";
+	case WSAECONNREFUSED:
+		return "ECONNREFUSED";
+	case WSAECONNRESET:
+		return "ECONNRESET";
+	case WSAEDESTADDRREQ:
+		return "EDESTADDRREQ";
+	case WSAEFAULT:
+		return "EFAULT";
+	case WSAEHOSTDOWN:
+		return "EHOSTDOWN";
+	case WSAEHOSTUNREACH:
+		return "EHOSTUNREACH";
+	case WSAEINPROGRESS:
+		return "EINPROGRESS";
+	case WSAEINTR:
+		return "EINTR";
+	case WSAEINVAL:
+		return "EINVAL";
+	case WSAEISCONN:
+		return "EISCONN";
+	case WSAEMFILE:
+		return "EMFILE";
+	case WSAEMSGSIZE:
+		return "EMSGSIZE";
+	case WSAENETDOWN:
+		return "ENETDOWN";
+	case WSAENETRESET:
+		return "ENETRESET";
+	case WSAENETUNREACH:
+		return "ENETUNREACH";
+	case WSAENOBUFS:
+		return "ENOBUFS";
+	case WSAENOPROTOOPT:
+		return "ENOPROTOOPT";
+	case WSAENOTCONN:
+		return "ENOTCONN";
+	case WSAENOTSOCK:
+		return "ENOTSOCK";
+	case WSAEOPNOTSUPP:
+		return "EOPNOTSUPP";
+	case WSAEPFNOSUPPORT:
+		return "EPFNOSUPPORT";
+	case WSAEPROCLIM:
+		return "EPROCLIM";
+	case WSAEPROTONOSUPPORT:
+		return "EPROTONOSUPPORT";
+	case WSAEPROTOTYPE:
+		return "EPROTOTYPE";
+	case WSAESHUTDOWN:
+		return "ESHUTDOWN";
+	case WSAESOCKTNOSUPPORT:
+		return "ESOCKTNOSUPPORT";
+	case WSAETIMEDOUT:
+		return "ETIMEDOUT";
+	case WSAEWOULDBLOCK:
+		return "EWOULDBLOCK";
+	case WSAHOST_NOT_FOUND:
+		return "HOST_NOT_FOUND";
+	case WSANOTINITIALISED:
+		return "NOTINITIALISED";
+	case WSANO_DATA:
+		return "NO_DATA";
+	case WSANO_RECOVERY:
+		return "NO_RECOVERY";
+	case WSASYSNOTREADY:
+		return "SYSNOTREADY";
+	case WSATRY_AGAIN:
+		return "TRY_AGAIN";
+	case WSAVERNOTSUPPORTED:
+		return "VERNOTSUPPORTED";
+	case WSAEDISCON:
+		return "EDISCON";
 
-		default:
-			mysnprintf(neterr, countof(neterr), "%d", code);
-			return neterr;
+	default:
+		mysnprintf(neterr, countof(neterr), "%d", code);
+		return neterr;
 	}
 }
 #endif

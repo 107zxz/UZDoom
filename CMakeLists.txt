@@ -27,7 +27,8 @@ if(NOT FORCE_NO_LTO)
 	endif()
 endif()
 
-if(WIN32)
+# if(WIN32)
+if (TRUE)
 	option( USE_UPDATER "enable auto-updater" OFF )
 endif()
 

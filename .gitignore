@@ -21,6 +21,7 @@ wadsrc*/**/language.0
 .cache
 *.kate-swp
 .kate*
+.direnv
 *.geany
 
 # private dev files
