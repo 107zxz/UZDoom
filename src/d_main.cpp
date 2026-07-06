@@ -38,6 +38,8 @@
 #include <math.h>
 #include <assert.h>
 
+#include <steam/steam_api.h>
+
 #include "a_dynlight.h"
 #include "am_map.h"
 #include "animations.h"
@@ -4218,6 +4220,12 @@ void SignalHandler(int signal)
 
 int GameMain()
 {
+	// Steam init
+	if (SteamAPI_RestartAppIfNecessary(480))
+		exit(1);
+	
+	SteamAPI_Init();
+
 	// On Windows, prefer the native win32 backend.
 	// On other platforms, use SDL until the other backends are more mature.
 	auto zwidget = DisplayBackend::TryCreateWin32();

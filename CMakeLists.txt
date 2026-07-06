@@ -253,6 +253,13 @@ option( NO_OPENAL "Disable OpenAL sound support" OFF )
 find_package( BZip2 )
 find_package( VPX )
 
+# Steamworks
+set(SteamworksSDK_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/libraries/steamworks/public")
+set(SteamworksSDK_LIBRARY "${CMAKE_SOURCE_DIR}/libraries/steamworks/redistributable_bin/linux64/libsteam_api.so")
+find_package( SteamworksSDK REQUIRED )
+configure_file("${SteamworksSDK_LIBRARY}" "libsteam_api.so" COPYONLY)
+configure_file("${CMAKE_SOURCE_DIR}/steam_appid.txt" "steam_appid.txt" COPYONLY)
+
 if (CURL_REQUIRED)
 	find_package( CURL )
 	if( MSVC AND NOT CURL_FOUND )
