@@ -408,8 +408,8 @@ void JoinSubPage::SetValues(FStartupSelectionInfo& info) const
 	const int port = clamp<int>(AddressPortEdit->GetTextInt(), 0, UINT16_MAX);
 	if (port > 0)
 	{
-		addr.AppendFormat(":%d", port);
-		info.DefaultNetJoinPort = port;
+		// addr.AppendFormat(":%d", port);
+		// info.DefaultNetJoinPort = port;
 	}
 	else
 	{

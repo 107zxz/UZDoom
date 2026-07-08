@@ -4221,10 +4221,11 @@ void SignalHandler(int signal)
 int GameMain()
 {
 	// Steam init
-	if (SteamAPI_RestartAppIfNecessary(480))
+	if (SteamAPI_RestartAppIfNecessary(4942300))
 		exit(1);
 	
-	SteamAPI_Init();
+	if (SteamAPI_Init())
+		SteamNetworkingUtils()->InitRelayNetworkAccess();
 
 	// On Windows, prefer the native win32 backend.
 	// On other platforms, use SDL until the other backends are more mature.

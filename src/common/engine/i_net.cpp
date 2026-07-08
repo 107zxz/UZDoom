@@ -39,6 +39,7 @@
 #include <netinet/in.h>
 // #include <sys/ioctl.h>
 // #include <sys/socket.h>
+#include <steam/steam_api.h>
 #include <unistd.h>
 #ifdef __sun
 #include <fcntl.h>
@@ -62,12 +63,12 @@
 /* [Petteri] Get more portable: */
 #ifndef _WIN32
 // TODO: Steamify
-typedef int SOCKET;
+typedef HSteamListenSocket SOCKET;
 #define SOCKET_ERROR   -1
 #define INVALID_SOCKET -1
 // TODO: Steamify
-#define closesocket       close
-#define ioctlsocket       ioctl
+// #define closesocket       close
+// #define ioctlsocket       ioctl
 #define Sleep(x)          usleep(x * 1000)
 #define WSAEWOULDBLOCK    EWOULDBLOCK
 #define WSAECONNRESET     ECONNRESET
@@ -148,6 +149,7 @@ struct FConnection
 {
 	EConnectionStatus Status       = CSTAT_NONE;
 	sockaddr_in       Address      = {};
+	HSteamNetConnection Connection = 0;
 	uint64_t          InfoAck      = 0u;
 	bool              bHasGameInfo = false;
 
@@ -179,7 +181,7 @@ static u_short GamePort  = (IPPORT_USERRESERVED + 29);
 static SOCKET              MySocket                        = INVALID_SOCKET;
 static FConnection         Connected[MAXPLAYERS]           = {};
 static uint8_t             TransmitBuffer[MaxTransmitSize] = {};
-static TArray<sockaddr_in> BannedConnections               = {};
+static TArray<HSteamNetConnection> BannedConnections               = {};
 static bool                bGameStarted                    = false;
 
 CUSTOM_CVAR(String, net_password, "", CVAR_IGNORE)
@@ -201,15 +203,15 @@ void               Net_ReadUserInfo(int client, TArrayView<uint8_t> &stream);
 void               Net_ReadGameInfo(TArrayView<uint8_t> &stream);
 void               Net_SetGameInfo(TArrayView<uint8_t> &stream);
 
-static SOCKET CreateUDPSocket()
-{
-	// TODO: Steamify
-	SOCKET s = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	if (s == INVALID_SOCKET)
-		I_FatalError("Couldn't create socket: %s", neterror());
+// static SOCKET CreateUDPSocket()
+// {
+// 	// TODO: Steamify
+// 	SOCKET s = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+// 	if (s == INVALID_SOCKET)
+// 		I_FatalError("Couldn't create socket: %s", neterror());
 
-	return s;
-}
+// 	return s;
+// }
 
 static void BindToLocalPort(SOCKET s, u_short port)
 {
@@ -224,51 +226,52 @@ static void BindToLocalPort(SOCKET s, u_short port)
 		I_FatalError("Couldn't bind to port: %s", neterror());
 }
 
-static void BuildAddress(sockaddr_in &address, const char *addrName)
-{
-	FString     target   = {};
-	u_short     port     = GamePort;
-	const char *portName = strchr(addrName, ':');
-	if (portName != nullptr)
-	{
-		target                 = FString(addrName, portName - addrName);
-		u_short portConversion = atoi(portName + 1);
-		if (!portConversion)
-			Printf("Malformed port: %s (using %d)\n", portName + 1, GamePort);
-		else
-			port = portConversion;
-	}
-	else
-	{
-		target = addrName;
-	}
+// static void BuildAddress(sockaddr_in &address, const char *addrName)
+// {
+// 	FString     target   = {};
+// 	u_short     port     = GamePort;
+// 	const char *portName = strchr(addrName, ':');
+// 	if (portName != nullptr)
+// 	{
+// 		target                 = FString(addrName, portName - addrName);
+// 		u_short portConversion = atoi(portName + 1);
+// 		if (!portConversion)
+// 			Printf("Malformed port: %s (using %d)\n", portName + 1, GamePort);
+// 		else
+// 			port = portConversion;
+// 	}
+// 	else
+// 	{
+// 		target = addrName;
+// 	}
 
-	bool isNamed = false;
-	for (size_t curChar = 0u; curChar < target.Len(); ++curChar)
-	{
-		char c = target[curChar];
-		if ((c < '0' || c > '9') && c != '.')
-		{
-			isNamed = true;
-			break;
-		}
-	}
+// 	bool isNamed = false;
+// 	for (size_t curChar = 0u; curChar < target.Len(); ++curChar)
+// 	{
+// 		char c = target[curChar];
+// 		if ((c < '0' || c > '9') && c != '.')
+// 		{
+// 			isNamed = true;
+// 			break;
+// 		}
+// 	}
 
-	address.sin_family = AF_INET;
-	address.sin_port   = htons(port);
-	if (!isNamed)
-	{
-		address.sin_addr.s_addr = inet_addr(target.GetChars());
-	}
-	else
-	{
-		hostent *hostEntry = gethostbyname(target.GetChars());
-		if (hostEntry == nullptr)
-			I_FatalError("gethostbyname: Couldn't find %s\n%s", target.GetChars(), neterror());
+// 	address.sin_family = AF_INET;
+// 	address.sin_port   = htons(port);
+// 	if (!isNamed)
+// 	{
+// 		address.sin_addr.s_addr = inet_addr(target.GetChars());
+// 	}
+// 	else
+// 	{
+// 		// TODO: Steamify
+// 		hostent *hostEntry = gethostbyname(target.GetChars());
+// 		if (hostEntry == nullptr)
+// 			I_FatalError("gethostbyname: Couldn't find %s\n%s", target.GetChars(), neterror());
 
-		address.sin_addr.s_addr = *(int *)hostEntry->h_addr_list[0];
-	}
-}
+// 		address.sin_addr.s_addr = *(int *)hostEntry->h_addr_list[0];
+// 	}
+// }
 
 int netInitCount = 0;
 
@@ -324,8 +327,12 @@ static void StartNetwork(bool autoPort)
 	multiplayer = true;
 
 	// TODO: Steamify
-	MySocket = CreateUDPSocket();
-	BindToLocalPort(MySocket, autoPort ? 0 : GamePort);
+	// MySocket = CreateUDPSocket();
+	// BindToLocalPort(MySocket, autoPort ? 0 : GamePort);
+
+	steam_cb_mgr = new SteamCallbackManager();
+
+	MySocket = SteamNetworkingSockets()->CreateListenSocketP2P(autoPort ? 0 : GamePort, 0, 0);
 
 	u_long trueVal = 1u;
 #ifndef __sun
@@ -339,7 +346,8 @@ void CloseNetwork()
 {
 	if (MySocket != INVALID_SOCKET)
 	{
-		closesocket(MySocket);
+		SteamNetworkingSockets()->CloseListenSocket(MySocket);
+		// closesocket(MySocket);
 		MySocket = INVALID_SOCKET;
 		netgame  = false;
 	}
@@ -468,7 +476,7 @@ void I_ClearClient(size_t client)
 	Connected[client].Clear();
 }
 
-static int FindClient(const sockaddr_in &address)
+static int FindClient(HSteamNetConnection address)
 {
 	int i = 0;
 	for (; i < MaxClients; ++i)
@@ -476,8 +484,7 @@ static int FindClient(const sockaddr_in &address)
 		if (Connected[i].Status == CSTAT_NONE)
 			continue;
 
-		if (address.sin_addr.s_addr == Connected[i].Address.sin_addr.s_addr &&
-		    address.sin_port == Connected[i].Address.sin_port)
+		if (address == Connected[i].Connection)
 		{
 			break;
 		}
@@ -486,7 +493,7 @@ static int FindClient(const sockaddr_in &address)
 	return i >= MaxClients ? -1 : i;
 }
 
-static void SendPacket(const sockaddr_in &to)
+static void SendPacket(HSteamNetConnection *to)
 {
 	// Huge packets should be sent out as sequences, not as one big packet, otherwise it's prone
 	// to high amounts of congestion and reordering needed.
@@ -525,50 +532,62 @@ static void SendPacket(const sockaddr_in &to)
 	TransmitBuffer[3]  = crc;
 
 	// TODO: Steamify
-	sendto(MySocket, (const char *)TransmitBuffer, size + 4, 0, (const sockaddr *)&to, sizeof(to));
+	// sendto(MySocket, (const char *)TransmitBuffer, size + 4, 0, (const sockaddr *)&to, sizeof(to));
+	SteamNetworkingSockets()->SendMessageToConnection(*to, TransmitBuffer, 0,0,0);
 }
 
-static void GetPacket(sockaddr_in *const from = nullptr)
+static void GetPacket(HSteamNetConnection *from = nullptr)
 {
-	sockaddr_in fromAddress;
-	socklen_t   fromSize = sizeof(fromAddress);
+	// HSteamNetConnection fromAddress;
+	// socklen_t   fromSize = sizeof(fromAddress);
 
 	// TODO: Steamify
-	int msgSize = recvfrom(MySocket, (char *)TransmitBuffer, MaxTransmitSize, 0, (sockaddr *)&fromAddress, &fromSize);
+	// int msgSize = recvfrom(MySocket, (char *)TransmitBuffer, MaxTransmitSize, 0, (sockaddr *)&fromAddress, &fromSize);
+	// TODO: Keep track of max messages
+	SteamNetworkingMessage_t *messageBuffer[1];
+	int nMessages = SteamNetworkingSockets()->ReceiveMessagesOnConnection(*from, messageBuffer, 1 );
+	int msgSize = 0;
 
-	int client = FindClient(fromAddress);
-	if (client >= 0 && msgSize == SOCKET_ERROR)
-	{
-		int err = WSAGetLastError();
-		if (err == WSAECONNRESET)
-		{
-			if (consoleplayer == -1)
-			{
-				client  = -1;
-				msgSize = 0;
-			}
-			else
-			{
-				// The remote node aborted unexpectedly, so pretend it sent an exit packet. If it was the host,
-				// just consider the game too bricked to continue since the host has to determine the new host properly.
-				if (client == Net_Arbitrator)
-					I_NetError("Host unexpectedly disconnected");
-
-				NetBuffer[0] = NCMD_EXIT;
-				msgSize      = 1;
-			}
-		}
-		else if (err != WSAEWOULDBLOCK)
-		{
-			I_Error("Failed to get packet: %s", neterror());
-		}
-		else
-		{
-			client  = -1;
-			msgSize = 0;
-		}
+	if (nMessages > 0) {
+		msgSize = messageBuffer[0]->m_cbSize;
+		memcpy(TransmitBuffer, messageBuffer[0]->m_pData, msgSize);
 	}
-	else if (msgSize > 0)
+
+	int client = FindClient(*from);
+	if (client >= 0 && nMessages == -1) // && msgSize == SOCKET_ERROR)
+	{
+		client = -1;
+		msgSize = 0;
+		// int err = WSAGetLastError();
+		// if (err == WSAECONNRESET)
+		// {
+		// 	if (consoleplayer == -1)
+		// 	{
+		// 		client  = -1;
+		// 		msgSize = 0;
+		// 	}
+		// 	else
+		// 	{
+		// 		// The remote node aborted unexpectedly, so pretend it sent an exit packet. If it was the host,
+		// 		// just consider the game too bricked to continue since the host has to determine the new host properly.
+		// 		if (client == Net_Arbitrator)
+		// 			I_NetError("Host unexpectedly disconnected");
+
+		// 		NetBuffer[0] = NCMD_EXIT;
+		// 		msgSize      = 1;
+		// 	}
+		// }
+		// else if (err != WSAEWOULDBLOCK)
+		// {
+		// 	I_Error("Failed to get packet: %s", neterror());
+		// }
+		// else
+		// {
+		// 	client  = -1;
+		// 	msgSize = 0;
+		// }
+	}
+	else if (nMessages > 0 && msgSize > 0)
 	{
 		const uint8_t *dataStart = &TransmitBuffer[4];
 		if (client == -1 && !(*dataStart & NCMD_SETUP))
@@ -580,12 +599,12 @@ static void GetPacket(sockaddr_in *const from = nullptr)
 			NetBuffer[0]    = NCMD_SETUP;
 			NetBuffer[1]    = PRE_IN_PROGRESS;
 			NetBufferLength = 2u;
-			SendPacket(fromAddress);
+			SendPacket(from);
 			msgSize = 0;
 		}
 		else
 		{
-			const uint32_t check = (*dataStart & NCMD_SETUP) ? CalcCRC32(dataStart, msgSize - 4)
+			const uint32_t check = (*dataStart & NCMD_SETUP) ? CalcCRC32(dataStart, messageBuffer[0]->GetSize() - 4)
 			                                                 : AddCRC32(CalcCRC32(dataStart, msgSize - 4), GameID,
 			                                                            std::extent_v<decltype(GameID)>);
 			const uint32_t crc =
@@ -622,15 +641,13 @@ static void GetPacket(sockaddr_in *const from = nullptr)
 			}
 		}
 	}
-	else
-	{
-		client = -1;
-	}
 
 	RemoteClient    = client;
 	NetBufferLength = max<int>(msgSize, 0);
-	if (from != nullptr)
-		*from = fromAddress;
+	// if (from != 0)
+	// 	*from = fromAddress;
+	if (nMessages > 0)
+	messageBuffer[0]->Release();
 }
 
 void I_NetCmd(ENetCommand cmd)
@@ -638,7 +655,7 @@ void I_NetCmd(ENetCommand cmd)
 	if (cmd == CMD_SEND)
 	{
 		if (RemoteClient >= 0)
-			SendPacket(Connected[RemoteClient].Address);
+			SendPacket(&Connected[RemoteClient].Connection);
 	}
 	else if (cmd == CMD_GET)
 	{
@@ -660,22 +677,22 @@ static bool ClientGotAck(size_t client, size_t from)
 	return (Connected[client].InfoAck & ((uint64_t)1u << from));
 }
 
-static bool GetConnection(sockaddr_in &from)
+static bool GetConnection(HSteamNetConnection &from)
 {
 	GetPacket(&from);
 	return NetBufferLength > 0;
 }
 
-static void RejectConnection(const sockaddr_in &to, ENetConnectType reason)
+static void RejectConnection(HSteamNetConnection &to, ENetConnectType reason)
 {
 	NetBuffer[0]    = NCMD_SETUP;
 	NetBuffer[1]    = reason;
 	NetBufferLength = 2u;
 
-	SendPacket(to);
+	SendPacket(&to);
 }
 
-static void SendVerificationError(const sockaddr_in &to, const FVerificationError &error)
+static void SendVerificationError(HSteamNetConnection &to, const FVerificationError &error)
 {
 	NetBuffer[0] = NCMD_SETUP;
 	NetBuffer[1] = PRE_VERIFICATION_ERROR;
@@ -713,13 +730,13 @@ static void SendVerificationError(const sockaddr_in &to, const FVerificationErro
 		NetBufferLength = i;
 	}
 
-	SendPacket(to);
+	SendPacket(&to);
 }
 
-static void AddClientConnection(const sockaddr_in &from, int client)
+static void AddClientConnection(HSteamNetConnection &from, int client)
 {
 	Connected[client].Status  = CSTAT_CONNECTING;
-	Connected[client].Address = from;
+	Connected[client].Connection = from;
 	NetworkClients += client;
 	I_NetLog("Client %u joined the lobby", client);
 	I_NetClientUpdated(client);
@@ -755,7 +772,7 @@ static void RemoveClientConnection(int client)
 
 		SetClientAck(i, client, false);
 		for (int i = 0; i < 4; ++i)
-			SendPacket(Connected[i].Address);
+			SendPacket(&Connected[i].Connection);
 	}
 }
 
@@ -769,7 +786,7 @@ void HandleIncomingConnection()
 		NetBuffer[0]    = NCMD_SETUP;
 		NetBuffer[1]    = PRE_GO;
 		NetBufferLength = 2u;
-		SendPacket(Connected[RemoteClient].Address);
+		SendPacket(&Connected[RemoteClient].Connection);
 	}
 }
 
@@ -786,7 +803,7 @@ static bool Host_CheckForConnections(void *connected)
 		if (client <= 0 || Connected[client].Status == CSTAT_NONE)
 			continue;
 
-		sockaddr_in booted = Connected[client].Address;
+		HSteamNetConnection booted = Connected[client].Connection;
 
 		RemoveClientConnection(client);
 		--*connectedPlayers;
@@ -801,7 +818,7 @@ static bool Host_CheckForConnections(void *connected)
 		if (client <= 0 || Connected[client].Status == CSTAT_NONE)
 			continue;
 
-		sockaddr_in booted = Connected[client].Address;
+		HSteamNetConnection booted = Connected[client].Connection;
 		BannedConnections.Push(booted);
 
 		RemoveClientConnection(client);
@@ -811,7 +828,7 @@ static bool Host_CheckForConnections(void *connected)
 		RejectConnection(booted, PRE_BANNED);
 	}
 
-	sockaddr_in from;
+	HSteamNetConnection from;
 	while (GetConnection(from))
 	{
 		if (NetBuffer[0] == NCMD_EXIT)
@@ -840,7 +857,7 @@ static bool Host_CheckForConnections(void *connected)
 			FVerificationError error          = {};
 			for (; banned < BannedConnections.Size(); ++banned)
 			{
-				if (BannedConnections[banned].sin_addr.s_addr == from.sin_addr.s_addr)
+				if (BannedConnections[banned] == from)
 					break;
 			}
 
@@ -915,7 +932,7 @@ static bool Host_CheckForConnections(void *connected)
 			NetBuffer[3]    = *connectedPlayers;
 			NetBuffer[4]    = MaxClients;
 			NetBufferLength = 5u;
-			SendPacket(con.Address);
+			SendPacket(&con.Connection);
 		}
 		else if (con.Status == CSTAT_WAITING)
 		{
@@ -924,7 +941,7 @@ static bool Host_CheckForConnections(void *connected)
 			{
 				NetBuffer[1]    = PRE_USER_INFO_ACK;
 				NetBufferLength = 2u;
-				SendPacket(con.Address);
+				SendPacket(&con.Connection);
 				clientReady = false;
 			}
 
@@ -938,7 +955,7 @@ static bool Host_CheckForConnections(void *connected)
 				TArrayView<uint8_t> stream = TArrayView(&NetBuffer[NetBufferLength], MAX_MSGLEN - NetBufferLength);
 				Net_SetGameInfo(stream);
 				NetBufferLength += stream.Data() - &NetBuffer[NetBufferLength];
-				SendPacket(con.Address);
+				SendPacket(&con.Connection);
 				clientReady = false;
 			}
 
@@ -965,7 +982,7 @@ static bool Host_CheckForConnections(void *connected)
 							TArrayView(&NetBuffer[NetBufferLength], MAX_MSGLEN - NetBufferLength);
 						Net_SetUserInfo(i, stream);
 						NetBufferLength += stream.Data() - &NetBuffer[NetBufferLength];
-						SendPacket(con.Address);
+						SendPacket(&con.Connection);
 					}
 					clientReady = false;
 				}
@@ -983,7 +1000,7 @@ static bool Host_CheckForConnections(void *connected)
 			NetBuffer[2]    = *connectedPlayers;
 			NetBuffer[3]    = MaxClients;
 			NetBufferLength = 4u;
-			SendPacket(con.Address);
+			SendPacket(&con.Connection);
 		}
 	}
 
@@ -1000,12 +1017,12 @@ static void SendAbort()
 		for (int client = 1; client < MaxClients; ++client)
 		{
 			if (Connected[client].Status != CSTAT_NONE)
-				SendPacket(Connected[client].Address);
+				SendPacket(&Connected[client].Connection);
 		}
 	}
 	else
 	{
-		SendPacket(Connected[0].Address);
+		SendPacket(&Connected[0].Connection);
 	}
 }
 
@@ -1067,7 +1084,7 @@ static bool HostGame(int arg)
 	for (size_t client = 1u; client < (size_t)MaxClients; ++client)
 	{
 		if (Connected[client].Status != CSTAT_NONE)
-			SendPacket(Connected[client].Address);
+			SendPacket(&Connected[client].Connection);
 	}
 
 	I_NetLog("Total players: %d", connectedPlayers);
@@ -1147,7 +1164,7 @@ static bool Guest_ContactHost(void *unused)
 {
 	// Listen for a reply.
 	const size_t addrSize = sizeof(sockaddr_in);
-	sockaddr_in  from;
+	HSteamNetConnection  from;
 	while (GetConnection(from))
 	{
 		if (RemoteClient != 0)
@@ -1229,7 +1246,7 @@ static bool Guest_ContactHost(void *unused)
 			NetBuffer[1]    = PRE_USER_INFO_ACK;
 			NetBuffer[2]    = consoleplayer;
 			NetBufferLength = 3u;
-			SendPacket(from);
+			SendPacket(&from);
 		}
 		else if (NetBuffer[1] == PRE_GAME_INFO)
 		{
@@ -1245,7 +1262,7 @@ static bool Guest_ContactHost(void *unused)
 			NetBuffer[0]    = NCMD_SETUP;
 			NetBuffer[1]    = PRE_GAME_INFO_ACK;
 			NetBufferLength = 2u;
-			SendPacket(from);
+			SendPacket(&from);
 		}
 		else if (NetBuffer[1] == PRE_USER_INFO)
 		{
@@ -1275,7 +1292,7 @@ static bool Guest_ContactHost(void *unused)
 			NetBuffer[1]    = PRE_USER_INFO_ACK;
 			NetBuffer[2]    = c;
 			NetBufferLength = 3u;
-			SendPacket(from);
+			SendPacket(&from);
 		}
 		else if (NetBuffer[1] == PRE_GO)
 		{
@@ -1294,7 +1311,7 @@ static bool Guest_ContactHost(void *unused)
 		const size_t passSize   = strlen(net_password) + 1;
 		memcpy(&NetBuffer[end], net_password, passSize);
 		NetBufferLength = end + passSize;
-		SendPacket(Connected[0].Address);
+		SendPacket(&Connected[0].Connection);
 	}
 	else
 	{
@@ -1307,13 +1324,13 @@ static bool Guest_ContactHost(void *unused)
 			TArrayView<uint8_t> stream = TArrayView(&NetBuffer[NetBufferLength], MAX_MSGLEN - NetBufferLength);
 			Net_SetUserInfo(consoleplayer, stream);
 			NetBufferLength += stream.Data() - &NetBuffer[NetBufferLength];
-			SendPacket(Connected[0].Address);
+			SendPacket(&Connected[0].Connection);
 		}
 		else if (con.Status == CSTAT_WAITING)
 		{
 			NetBuffer[1]    = PRE_HEARTBEAT;
 			NetBufferLength = 2u;
-			SendPacket(Connected[0].Address);
+			SendPacket(&Connected[0].Connection);
 		}
 	}
 
@@ -1331,7 +1348,13 @@ static bool JoinGame(int arg)
 	StartNetwork(true);
 
 	// Host is always client 0.
-	BuildAddress(Connected[0].Address, Args->GetArg(arg));
+
+	// Create steam connection
+	// CSteamID sID;
+	// sID.SetFromString(Args->GetArg(arg), EUniverse::k_EUniversePublic);
+
+	// TODO: Integrate this with the friends list
+	Connected[0].Connection = SteamNetworking()->CreateP2PConnectionSocket(SteamUser()->GetSteamID(),0,10,true);
 	Connected[0].Status = CSTAT_CONNECTING;
 
 	I_NetInit("Contacting host...", false);
@@ -1502,3 +1525,14 @@ const char *neterror()
 	}
 }
 #endif
+
+SteamCallbackManager* steam_cb_mgr;
+
+void SteamCallbackManager::OnConnStatusChanged( SteamNetConnectionStatusChangedCallback_t* pCallback )
+{
+	printf("Connection received!\n");
+
+	// Waaa
+	printf("Connection received!\n");
+	printf("Connection received!\n");
+}

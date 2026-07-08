@@ -5,6 +5,8 @@
 #include <SDL2/SDL_vulkan.h>
 #include <SDL2/SDL_hints.h>
 
+#include <steam/steam_api.h>
+
 #define EVENT_NOTIFY_WINDOW SDL_USEREVENT + 100
 
 Uint32 SDL2DisplayWindow::PaintEventNumber = 0xffffffff;
@@ -242,6 +244,8 @@ void SDL2DisplayWindow::Update()
 	event.type = PaintEventNumber;
 	event.user.windowID = SDL_GetWindowID(Handle.window);
 	SDL_PushEvent(&event);
+
+	// SteamAPI_RunCallbacks();
 }
 
 bool SDL2DisplayWindow::GetKeyState(InputKey key)
@@ -413,6 +417,9 @@ void SDL2DisplayWindow::RunLoop()
 		int result = SDL_WaitEvent(&event);
 		if (result == 1)
 			DispatchEvent(event); // Silently ignore if it fails and pray it doesn't busy loop, because SDL and Linux utterly sucks!
+		
+		SteamAPI_RunCallbacks();
+		// printf("Hi!\n");
 	}
 }
 

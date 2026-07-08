@@ -29,6 +29,7 @@
 #include <stdint.h>
 #include "m_argv.h"
 #include "tarray.h"
+#include <steam/steam_api.h>
 
 inline constexpr size_t MAXPLAYERS = 64u;
 
@@ -119,5 +120,14 @@ void CloseNetwork();
 
 void StartNetworkLean();
 bool IsNetworkStartedLean();
+
+class SteamCallbackManager
+{
+private:
+	// STEAM_CALLBACK( SteamCallbackManager, OnGameOverlayActivated, GameOverlayActivated_t );
+	STEAM_CALLBACK(SteamCallbackManager, OnConnStatusChanged, SteamNetConnectionStatusChangedCallback_t);
+};
+
+extern SteamCallbackManager* steam_cb_mgr;
 
 #endif
