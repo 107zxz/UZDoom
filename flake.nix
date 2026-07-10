@@ -13,6 +13,7 @@
             cmake
             ninja
             gdb
+
         ];
         buildInputs = with pkgs; [
             python3

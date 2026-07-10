@@ -22,6 +22,23 @@ FARG(port, "Multiplayer", "Specifies an alternative IP port for a network game."
      " port 5029 is used.");
 FARG(password, "", "", "", "");
 
+struct FConnection
+{
+	// EConnectionStatus Status = CSTAT_NONE;
+	// sockaddr_in Address = {};
+	uint64_t SteamID = 0u;
+	uint64_t InfoAck = 0u;
+	bool bHasGameInfo = false;
+
+	void Clear()
+	{
+		// Status = CSTAT_NONE;
+		// Address = {};
+		InfoAck = 0u;
+		bHasGameInfo = false;
+	}
+};
+
 bool         netgame        = false;
 bool         multiplayer    = false;
 int          consoleplayer  = 0;
@@ -136,6 +153,8 @@ static void HostGame(int arg)
 
 static bool JoinGame(int arg)
 {
+
+
 }
 
 bool I_InitNetwork()
@@ -194,6 +213,28 @@ void I_NetCmd(ENetCommand cmd)
 	}
 }
 
+// Print a network-related message to the console. This doesn't print to the window so should
+// not be used for that and is mainly for logging.
+static void I_NetLog(const char* text, ...)
+{
+	// todo: use better abstraction once everything is migrated to in-game start screens.
+#if defined _WIN32 || defined __APPLE__
+	va_list ap;
+	va_start(ap, text);
+	VPrintf(PRINT_HIGH, text, ap);
+	Printf("\n");
+	va_end(ap);
+#else
+	FString str;
+	va_list argptr;
+
+	va_start(argptr, text);
+	str.VFormat(text, argptr);
+	va_end(argptr);
+	fprintf(stderr, "\r%-40s\n", str.GetChars());
+#endif
+}
+
 class CallbackHandler
 {
   private:
@@ -203,7 +244,28 @@ class CallbackHandler
 
 void CallbackHandler::OnCreateLobby(LobbyCreated_t *cb)
 {
+	Printf("Started a steam lobby with id: %d.\n", cb->m_ulSteamIDLobby);
 }
+
+static void AddClientConnection(uint64_t steamID, int client)
+{
+	// Connected[client].Status = CSTAT_CONNECTING;
+	Connected[client].SteamID = steamID;
+	NetworkClients += client;
+	Printf("Client %u joined the lobby", client);
+	// NetStartWindow::NetUpdate(client, Connected[client].Status);
+
+	// Make sure any ready clients are marked as needing the new client's info.
+	// for (int i = 1; i < MaxClients; ++i)
+	// {
+	// 	if (Connected[i].Status == CSTAT_READY)
+	// 	{
+	// 		Connected[i].Status = CSTAT_WAITING;
+	// 		NetStartWindow::NetUpdate(i, Connected[i].Status);
+	// 	}
+	// }
+}
+
 
 void CallbackHandler::OnLobbyChatUpdate(LobbyChatUpdate_t *cb)
 {
@@ -216,12 +278,13 @@ void CallbackHandler::OnLobbyChatUpdate(LobbyChatUpdate_t *cb)
 		int free = 1;
 		for (; free < MaxClients; ++free)
 		{
-			if (Connected[free].Status == CSTAT_NONE)
-				break;
+			// if (Connected[free].Status == CSTAT_NONE)
+			// 	break;
 		}
 
-		AddClientConnection(from, free);
-		++*connectedPlayers;
-		I_NetUpdatePlayers(*connectedPlayers, MaxClients);
+		const int connectedPlayers = SteamMatchmaking()->GetNumLobbyMembers(cb->m_ulSteamIDLobby);
+
+		AddClientConnection(cb->m_ulSteamIDUserChanged, free);
+		NetStartWindow::NetProgress(connectedPlayers, MaxClients);
 	}
 }
