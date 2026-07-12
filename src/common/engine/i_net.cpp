@@ -26,15 +26,15 @@ struct FConnection
 {
 	// EConnectionStatus Status = CSTAT_NONE;
 	// sockaddr_in Address = {};
-	uint64_t SteamID = 0u;
-	uint64_t InfoAck = 0u;
-	bool bHasGameInfo = false;
+	uint64_t SteamID      = 0u;
+	uint64_t InfoAck      = 0u;
+	bool     bHasGameInfo = false;
 
 	void Clear()
 	{
 		// Status = CSTAT_NONE;
 		// Address = {};
-		InfoAck = 0u;
+		InfoAck      = 0u;
 		bHasGameInfo = false;
 	}
 };
@@ -102,10 +102,10 @@ static bool Host_CheckForConnections(void *connected)
 {
 	// Ensure everyone is ready before we start the game.
 	// Note, player data is handled by other callbacks
-	return false;
+	return false || NetStartWindow::ShouldStartNet();
 }
 
-static void HostGame(int arg)
+static bool HostGame(int arg)
 {
 	if (arg >= Args->NumArgs() || !(MaxClients = atoi(Args->GetArg(arg))))
 	{ // No player count specified, assume 2
@@ -124,8 +124,7 @@ static void HostGame(int arg)
 		TicDup      = 1u;
 		multiplayer = true;
 
-		bGameStarted = true;
-		return;
+		return true;
 	}
 
 	// Originally StartNetwork
@@ -148,13 +147,12 @@ static void HostGame(int arg)
 		throw CExitEvent(0);
 	}
 
-	bGameStarted = true;
+	TicDup = 1u; // TEMP
+	return true;
 }
 
 static bool JoinGame(int arg)
 {
-
-
 }
 
 bool I_InitNetwork()
@@ -166,10 +164,10 @@ bool I_InitNetwork()
 	int arg = -1;
 	if ((arg = Args->CheckParm(FArg_host)))
 	{
-		HostGame(arg + 1);
-		return true;
-		// if (!HostGame(arg + 1))
-		// return false;
+		// HostGame(arg + 1);
+		// return true;
+		if (!HostGame(arg + 1))
+			return false;
 	}
 	else if ((arg = Args->CheckParm(FArg_join)))
 	{
@@ -215,7 +213,7 @@ void I_NetCmd(ENetCommand cmd)
 
 // Print a network-related message to the console. This doesn't print to the window so should
 // not be used for that and is mainly for logging.
-static void I_NetLog(const char* text, ...)
+static void I_NetLog(const char *text, ...)
 {
 	// todo: use better abstraction once everything is migrated to in-game start screens.
 #if defined _WIN32 || defined __APPLE__
@@ -237,14 +235,25 @@ static void I_NetLog(const char* text, ...)
 
 class CallbackHandler
 {
+  public:
+	void CreateLobby(int nPlayers);
+
   private:
-	STEAM_CALLBACK(CallbackHandler, OnCreateLobby, LobbyCreated_t);
 	STEAM_CALLBACK(CallbackHandler, OnLobbyChatUpdate, LobbyChatUpdate_t);
+	STEAM_CALLBACK(CallbackHandler, OnLobbyCreated, LobbyCreated_t);
+	// void                                         OnLobbyCreated(LobbyCreated_t *cb, bool bIOFailure);
+	// CCallResult<CallbackHandler, LobbyCreated_t> m_LobbyCreatedCallResult;
 };
 
-void CallbackHandler::OnCreateLobby(LobbyCreated_t *cb)
+CallbackHandler handler;
+
+void CallbackHandler::CreateLobby(int nPlayers)
 {
-	Printf("Started a steam lobby with id: %d.\n", cb->m_ulSteamIDLobby);
+}
+
+void CallbackHandler::OnLobbyCreated(LobbyCreated_t *cb)
+{
+	Printf("Started a steam lobby with id: %lld\n", cb->m_ulSteamIDLobby);
 }
 
 static void AddClientConnection(uint64_t steamID, int client)
@@ -265,7 +274,6 @@ static void AddClientConnection(uint64_t steamID, int client)
 	// 	}
 	// }
 }
-
 
 void CallbackHandler::OnLobbyChatUpdate(LobbyChatUpdate_t *cb)
 {
