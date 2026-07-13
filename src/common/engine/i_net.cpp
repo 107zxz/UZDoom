@@ -105,6 +105,51 @@ static bool Host_CheckForConnections(void *connected)
 	return false || NetStartWindow::ShouldStartNet();
 }
 
+static void SendPacket(uint64_t toSteamID)
+{
+	// Huge packets should be sent out as sequences, not as one big packet, otherwise it's prone
+	// to high amounts of congestion and reordering needed.
+	if (NetBufferLength > MAX_MSGLEN)
+		I_FatalError("Netbuffer overflow: Tried to send %lu bytes of data", NetBufferLength);
+
+	assert(!(NetBuffer[0] & NCMD_COMPRESSED));
+
+	uint8_t *dataStart = &TransmitBuffer[4];
+	uLong    size      = MaxTransmitSize - 5u;
+	if (NetBufferLength >= MinCompressionSize)
+	{
+		*dataStart    = NetBuffer[0] | NCMD_COMPRESSED;
+		const int res = compress2(dataStart + 1, &size, NetBuffer + 1, NetBufferLength - 1u, 9);
+		if (res != Z_OK)
+			I_Error("Net compression failed (zlib error %d)", res);
+
+		++size;
+	}
+	else
+	{
+		memcpy(dataStart, NetBuffer, NetBufferLength);
+		size = NetBufferLength;
+	}
+
+	if (size + 4 > MaxTransmitSize)
+		I_Error("Failed to compress data down to acceptable transmission size");
+
+	// If a connection packet, don't check the game id since they might not have it yet.
+	const uint32_t crc = (NetBuffer[0] & NCMD_SETUP)
+	                         ? CalcCRC32(dataStart, size)
+	                         : AddCRC32(CalcCRC32(dataStart, size), GameID, std::extent_v<decltype(GameID)>);
+	TransmitBuffer[0]  = crc >> 24;
+	TransmitBuffer[1]  = crc >> 16;
+	TransmitBuffer[2]  = crc >> 8;
+	TransmitBuffer[3]  = crc;
+
+	CSteamID t;
+	t.SetFromUint64(toSteamID);
+
+	SteamNetworking()->SendP2PPacket(t, TransmitBuffer, size + 4, k_EP2PSendUnreliable);
+	// sendto(MySocket, (const char *)TransmitBuffer, size + 4, 0, (const sockaddr *)&to, sizeof(to));
+}
+
 static bool HostGame(int arg)
 {
 	if (arg >= Args->NumArgs() || !(MaxClients = atoi(Args->GetArg(arg))))
@@ -241,6 +286,7 @@ class CallbackHandler
   private:
 	STEAM_CALLBACK(CallbackHandler, OnLobbyChatUpdate, LobbyChatUpdate_t);
 	STEAM_CALLBACK(CallbackHandler, OnLobbyCreated, LobbyCreated_t);
+	STEAM_CALLBACK(CallbackHandler, OnP2PSessionRequest, P2PSessionRequest_t);
 	// void                                         OnLobbyCreated(LobbyCreated_t *cb, bool bIOFailure);
 	// CCallResult<CallbackHandler, LobbyCreated_t> m_LobbyCreatedCallResult;
 };
@@ -254,6 +300,12 @@ void CallbackHandler::CreateLobby(int nPlayers)
 void CallbackHandler::OnLobbyCreated(LobbyCreated_t *cb)
 {
 	Printf("Started a steam lobby with id: %lld\n", cb->m_ulSteamIDLobby);
+}
+
+void CallbackHandler::OnP2PSessionRequest(P2PSessionRequest_t *cb)
+{
+	// Blanket recieve packets. Add a lobby restriction sometime
+	SteamNetworking()->AcceptP2PSessionWithUser(cb->m_steamIDRemote);
 }
 
 static void AddClientConnection(uint64_t steamID, int client)
