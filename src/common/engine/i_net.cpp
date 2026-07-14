@@ -60,6 +60,8 @@
 #include "version.h"
 #include "widgets/netstartwindow.h"
 
+#include "base64.h"
+
 /* [Petteri] Get more portable: */
 #ifndef _WIN32
 typedef int SOCKET;
@@ -523,6 +525,11 @@ static void SendPacket(uint64_t toSteamID)
 	CSteamID t;
 	t.SetFromUint64(toSteamID);
 
+	// TransmitBuffer[size + 4] = '\0';
+
+	TArray<uint8_t> b64 = base64_encode(TransmitBuffer, size + 4);
+	Printf("Sending packet with contents \"%s\" to steam id %llu\n", (const char *)b64.Data(), toSteamID);
+
 	SteamNetworking()->SendP2PPacket(t, TransmitBuffer, size + 4, k_EP2PSendUnreliable);
 	// sendto(MySocket, (const char *)TransmitBuffer, size + 4, 0, (const sockaddr *)&to, sizeof(to));
 }
@@ -539,6 +546,7 @@ static void GetPacket(uint64_t *from = nullptr)
 	SteamNetworking()->ReadP2PPacket(TransmitBuffer, MaxTransmitSize, &msgSize, &fromSteamID);
 
 	int client = FindClient(fromSteamID.ConvertToUint64());
+
 	if (client >= 0 && msgSize == SOCKET_ERROR)
 	{
 		int err = WSAGetLastError();
@@ -572,6 +580,10 @@ static void GetPacket(uint64_t *from = nullptr)
 	}
 	else if (msgSize > 0)
 	{
+		TArray<uint8_t> b64 = base64_encode(TransmitBuffer, msgSize);
+		Printf("Recieving packet with contents \"%s\" from client %llu\n", (const char *)b64.Data(),
+		       fromSteamID.ConvertToUint64());
+
 		const uint8_t *dataStart = &TransmitBuffer[4];
 		if (client == -1 && !(*dataStart & NCMD_SETUP))
 		{
@@ -1544,22 +1556,22 @@ void CallbackHandler::OnP2PSessionRequest(P2PSessionRequest_t *cb)
 
 void CallbackHandler::OnLobbyChatUpdate(LobbyChatUpdate_t *cb)
 {
-	if (cb->m_rgfChatMemberStateChange & k_EChatMemberStateChangeEntered)
-	{
-		// Unsure of meaning
-		if (RemoteClient >= 0)
-			return;
+	// if (cb->m_rgfChatMemberStateChange & k_EChatMemberStateChangeEntered)
+	// {
+	// 	// Unsure of meaning
+	// 	if (RemoteClient >= 0)
+	// 		return;
 
-		int free = 1;
-		for (; free < MaxClients; ++free)
-		{
-			// if (Connected[free].Status == CSTAT_NONE)
-			// 	break;
-		}
+	// 	int free = 1;
+	// 	for (; free < MaxClients; ++free)
+	// 	{
+	// 		// if (Connected[free].Status == CSTAT_NONE)
+	// 		// 	break;
+	// 	}
 
-		const int connectedPlayers = SteamMatchmaking()->GetNumLobbyMembers(cb->m_ulSteamIDLobby);
+	// 	const int connectedPlayers = SteamMatchmaking()->GetNumLobbyMembers(cb->m_ulSteamIDLobby);
 
-		AddClientConnection(cb->m_ulSteamIDUserChanged, free);
-		NetStartWindow::NetProgress(connectedPlayers, MaxClients);
-	}
+	// 	AddClientConnection(cb->m_ulSteamIDUserChanged, free);
+	// 	NetStartWindow::NetProgress(connectedPlayers, MaxClients);
+	// }
 }
