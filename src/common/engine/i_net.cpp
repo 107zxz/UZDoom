@@ -1530,7 +1530,6 @@ class CallbackHandler
 	void CreateLobby(int nPlayers);
 
   private:
-	STEAM_CALLBACK(CallbackHandler, OnLobbyChatUpdate, LobbyChatUpdate_t);
 	STEAM_CALLBACK(CallbackHandler, OnLobbyCreated, LobbyCreated_t);
 	STEAM_CALLBACK(CallbackHandler, OnP2PSessionRequest, P2PSessionRequest_t);
 	// void                                         OnLobbyCreated(LobbyCreated_t *cb, bool bIOFailure);
@@ -1552,26 +1551,4 @@ void CallbackHandler::OnP2PSessionRequest(P2PSessionRequest_t *cb)
 {
 	// Blanket recieve packets. Add a lobby restriction sometime
 	SteamNetworking()->AcceptP2PSessionWithUser(cb->m_steamIDRemote);
-}
-
-void CallbackHandler::OnLobbyChatUpdate(LobbyChatUpdate_t *cb)
-{
-	// if (cb->m_rgfChatMemberStateChange & k_EChatMemberStateChangeEntered)
-	// {
-	// 	// Unsure of meaning
-	// 	if (RemoteClient >= 0)
-	// 		return;
-
-	// 	int free = 1;
-	// 	for (; free < MaxClients; ++free)
-	// 	{
-	// 		// if (Connected[free].Status == CSTAT_NONE)
-	// 		// 	break;
-	// 	}
-
-	// 	const int connectedPlayers = SteamMatchmaking()->GetNumLobbyMembers(cb->m_ulSteamIDLobby);
-
-	// 	AddClientConnection(cb->m_ulSteamIDUserChanged, free);
-	// 	NetStartWindow::NetProgress(connectedPlayers, MaxClients);
-	// }
 }
