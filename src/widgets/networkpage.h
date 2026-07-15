@@ -19,6 +19,7 @@
 
 #include <zwidget/core/widget.h>
 #include "gstrings.h"
+#include <steam/steam_api.h>
 
 class LauncherWindow;
 class CheckboxLabel;
@@ -29,6 +30,7 @@ class PushButton;
 class TabWidget;
 struct WadStuff;
 struct FStartupSelectionInfo;
+class ListView;
 
 class HostSubPage;
 class JoinSubPage;
@@ -105,15 +107,19 @@ public:
 	void SetValues(FStartupSelectionInfo& info) const;
 
 private:
+	STEAM_CALLBACK(JoinSubPage, OnLobbySearch, LobbyMatchList_t);
 	void OnGeometryChanged() override;
 
 	NetworkPage* MainTab = nullptr;
 
-	TextLabel* AddressLabel = nullptr;
-	LineEdit* AddressEdit = nullptr;
-	TextLabel* AddressPortLabel = nullptr;
-	LineEdit* AddressPortEdit = nullptr;
-	TextLabel* AddressPortHintLabel = nullptr;
+	// TextLabel* AddressLabel = nullptr;
+	// LineEdit* AddressEdit = nullptr;
+	// TextLabel* AddressPortLabel = nullptr;
+	// LineEdit* AddressPortEdit = nullptr;
+	// TextLabel* AddressPortHintLabel = nullptr;
+
+	ListView* LobbyList = nullptr;
+	PushButton* RefreshButton = nullptr;
 
 	TextLabel* TeamDeathmatchLabel = nullptr;
 	TextLabel* TeamLabel = nullptr;
