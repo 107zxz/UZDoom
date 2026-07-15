@@ -22,6 +22,7 @@
 #include <zwidget/widgets/listview/listview.h>
 #include <zwidget/widgets/tabwidget/tabwidget.h>
 #include <zwidget/widgets/textlabel/textlabel.h>
+#include <zwidget/widgets/pushbutton/pushbutton.h>
 
 #include "gstrings.h"
 #include "i_interface.h"
@@ -294,6 +295,7 @@ void HostSubPage::SetValues(FStartupSelectionInfo& info) const
 			info.AdditionalNetArgs.AppendFormat(" +team %d", team);
 			info.DefaultNetHostTeam = team;
 		}
+		break;
 	case 2:
 		if (AltDeathmatchCheckbox->GetChecked())
 			info.AdditionalNetArgs.AppendFormat(" -altdeath");
@@ -341,8 +343,8 @@ void HostSubPage::OnGeometryChanged()
 	MaxPlayersEdit->SetFrameGeometry(LabelOfsSize, y, EditWidth, EditHeight);
 	y += EditHeight + 2.0;
 
-	PortLabel->SetFrameGeometry(0.0, y, LabelOfsSize, PortLabel->GetPreferredHeight());
-	PortEdit->SetFrameGeometry(LabelOfsSize, y, EditWidth, EditHeight);
+	// PortLabel->SetFrameGeometry(0.0, y, LabelOfsSize, PortLabel->GetPreferredHeight());
+	// PortEdit->SetFrameGeometry(LabelOfsSize, y, EditWidth, EditHeight);
 
 	MaxPlayerHintLabel->SetFrameGeometry(hintOfs, 0.0, wSize - hintOfs, MaxPlayerHintLabel->GetPreferredHeight());
 	PortHintLabel->SetFrameGeometry(hintOfs, y, wSize - hintOfs, PortHintLabel->GetPreferredHeight());
@@ -375,16 +377,21 @@ void HostSubPage::OnGeometryChanged()
 
 JoinSubPage::JoinSubPage(NetworkPage* main, const FStartupSelectionInfo& info) : Widget(nullptr), MainTab(main)
 {
-	AddressEdit = new LineEdit(this);
-	AddressPortEdit = new LineEdit(this);
-	AddressLabel = new TextLabel(this);
-	AddressPortLabel = new TextLabel(this);
+	// AddressEdit = new LineEdit(this);
+	// AddressPortEdit = new LineEdit(this);
+	// AddressLabel = new TextLabel(this);
+	// AddressPortLabel = new TextLabel(this);
 
-	AddressEdit->SetText(info.DefaultNetAddress.GetChars());
-	AddressPortEdit->SetMaxLength(5);
-	AddressPortEdit->SetNumericMode(true);
-	if (info.DefaultNetJoinPort > 0)
-		AddressPortEdit->SetTextInt(info.DefaultNetJoinPort);
+	// AddressEdit->SetText(info.DefaultNetAddress.GetChars());
+	// AddressPortEdit->SetMaxLength(5);
+	// AddressPortEdit->SetNumericMode(true);
+	// if (info.DefaultNetJoinPort > 0)
+	// 	AddressPortEdit->SetTextInt(info.DefaultNetJoinPort);
+
+	LobbyList = new ListView(this);
+	RefreshButton = new PushButton(this);
+
+	RefreshButton->OnClick = [this] {SteamMatchmaking()->RequestLobbyList();};
 
 	TeamDeathmatchLabel = new TextLabel(this);
 	TeamLabel = new TextLabel(this);
@@ -394,30 +401,30 @@ JoinSubPage::JoinSubPage(NetworkPage* main, const FStartupSelectionInfo& info) :
 	TeamEdit->SetNumericMode(true);
 	TeamEdit->SetTextInt(info.DefaultNetJoinTeam);
 
-	AddressPortHintLabel = new TextLabel(this);
+	// AddressPortHintLabel = new TextLabel(this);
 	TeamHintLabel = new TextLabel(this);
 
-	AddressPortHintLabel->SetStyleColor("color", Theme::getMain(COLOR_MIX));
+	// AddressPortHintLabel->SetStyleColor("color", Theme::getMain(COLOR_MIX));
 	TeamHintLabel->SetStyleColor("color", Theme::getMain(COLOR_MIX));
 }
 
 void JoinSubPage::SetValues(FStartupSelectionInfo& info) const
 {
-	FString addr = AddressEdit->GetText();
-	info.DefaultNetAddress = addr;
-	const int port = clamp<int>(AddressPortEdit->GetTextInt(), 0, UINT16_MAX);
-	if (port > 0)
-	{
-		// addr.AppendFormat(":%d", port);
-		// info.DefaultNetJoinPort = port;
-	}
-	else
-	{
-		info.DefaultNetJoinPort = 0;
-	}
+	// FString addr = AddressEdit->GetText();
+	// info.DefaultNetAddress = addr;
+	// const int port = clamp<int>(AddressPortEdit->GetTextInt(), 0, UINT16_MAX);
+	// if (port > 0)
+	// {
+	// 	// addr.AppendFormat(":%d", port);
+	// 	// info.DefaultNetJoinPort = port;
+	// }
+	// else
+	// {
+	// 	info.DefaultNetJoinPort = 0;
+	// }
 
 	info.AdditionalNetArgs = "";
-	info.AdditionalNetArgs.AppendFormat(" -join %s", addr.GetChars());
+	// info.AdditionalNetArgs.AppendFormat(" -join %s", addr.GetChars());
 
 	int team = 255;
 	if (!TeamEdit->GetText().empty())
@@ -432,13 +439,14 @@ void JoinSubPage::SetValues(FStartupSelectionInfo& info) const
 
 void JoinSubPage::UpdateLanguage()
 {
-	AddressLabel->SetText(GStrings.GetString("PICKER_IP"));
-	AddressPortLabel->SetText(GStrings.GetString("PICKER_PORT"));
+	// AddressLabel->SetText(GStrings.GetString("PICKER_IP"));
+	// AddressPortLabel->SetText(GStrings.GetString("PICKER_PORT"));
+	RefreshButton->SetText("Refresh Lobby List");
 
 	TeamDeathmatchLabel->SetText(GStrings.GetString("PICKER_TDMLABEL"));
 	TeamLabel->SetText(GStrings.GetString("PICKER_TEAM"));
 
-	AddressPortHintLabel->SetText(GStrings.GetString("PICKER_PORTHINT"));
+	// AddressPortHintLabel->SetText(GStrings.GetString("PICKER_PORTHINT"));
 	TeamHintLabel->SetText(GStrings.GetString("PICKER_TEAMHINT"));
 }
 
@@ -450,24 +458,46 @@ void JoinSubPage::OnGeometryChanged()
 	constexpr double LabelOfsSize = 100.0;
 	constexpr double hintOfs = 160.0;
 
+	const double bottomPanelWidth = w - 10.0;
+
 	double y = 0.0;
 
-	AddressLabel->SetFrameGeometry(0.0, y, LabelOfsSize, AddressLabel->GetPreferredHeight());
-	AddressEdit->SetFrameGeometry(LabelOfsSize, y, w * 0.5 - LabelOfsSize, EditHeight);
-	y += EditHeight + 2.0;
+	// AddressLabel->SetFrameGeometry(0.0, y, LabelOfsSize, AddressLabel->GetPreferredHeight());
+	// AddressEdit->SetFrameGeometry(LabelOfsSize, y, w * 0.5 - LabelOfsSize, EditHeight);
+	// y += EditHeight + 2.0;
 
-	AddressPortLabel->SetFrameGeometry(0.0, y, LabelOfsSize, AddressPortLabel->GetPreferredHeight());
-	AddressPortEdit->SetFrameGeometry(LabelOfsSize, y, 55.0, EditHeight);
+	// AddressPortLabel->SetFrameGeometry(0.0, y, LabelOfsSize, AddressPortLabel->GetPreferredHeight());
+	// AddressPortEdit->SetFrameGeometry(LabelOfsSize, y, 55.0, EditHeight);
 
-	AddressPortHintLabel->SetFrameGeometry(hintOfs, y, w - hintOfs, AddressPortHintLabel->GetPreferredHeight());
-	y += EditHeight + 7.0;
+	// AddressPortHintLabel->SetFrameGeometry(hintOfs, y, w - hintOfs, AddressPortHintLabel->GetPreferredHeight());
+	// y += EditHeight + 7.0;
 
-	TeamDeathmatchLabel->SetFrameGeometry(0.0, y, w, TeamDeathmatchLabel->GetPreferredHeight());
-	y += TeamDeathmatchLabel->GetPreferredHeight();
+	RefreshButton->SetFrameGeometry(0.0, y, 200.0, RefreshButton->GetPreferredHeight());
+	y += RefreshButton->GetPreferredHeight() + 2.0;
 
-	TeamLabel->SetFrameGeometry(0.0, y, LabelOfsSize, TeamLabel->GetPreferredHeight());
-	TeamEdit->SetFrameGeometry(LabelOfsSize, y, 55.0, EditHeight);
-	TeamHintLabel->SetFrameGeometry(hintOfs, y, w - hintOfs, TeamHintLabel->GetPreferredHeight());
+	double temp = std::max(h - y, 0.0);
+	LobbyList->SetFrameGeometry(0.0, y, bottomPanelWidth, temp);
+	y += LobbyList->GetPreferredHeight();
+
+	// TeamDeathmatchLabel->SetFrameGeometry(210.0, y * 0.0, w, TeamDeathmatchLabel->GetPreferredHeight());
+	// y += TeamDeathmatchLabel->GetPreferredHeight();
+
+	TeamLabel->SetFrameGeometry(RefreshButton->GetWidth()+40.0, y * 0.0, LabelOfsSize, TeamLabel->GetPreferredHeight());
+	TeamEdit->SetFrameGeometry(RefreshButton->GetWidth()+80.0, y*0.0, 55.0, EditHeight);
+	TeamHintLabel->SetFrameGeometry(RefreshButton->GetWidth()+160.0, y*0.0, w - hintOfs, TeamHintLabel->GetPreferredHeight());
 
 	MainTab->UpdatePlayButton();
+}
+
+void JoinSubPage::OnLobbySearch(LobbyMatchList_t* cb) {
+
+	int l = LobbyList->GetItemAmount();
+	for (int i = 0; i<l; i++)
+	LobbyList->RemoveItem();
+
+	for (uint32 i = 0; i < cb->m_nLobbiesMatching; i++) {
+		CSteamID lobbyID = SteamMatchmaking()->GetLobbyByIndex(i);
+
+		LobbyList->AddItem(std::to_string(lobbyID.ConvertToUint64()));
+	}
 }
