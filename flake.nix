@@ -13,6 +13,7 @@
             cmake
             ninja
             gdb
+            clang-tools
 
         ];
         buildInputs = with pkgs; [

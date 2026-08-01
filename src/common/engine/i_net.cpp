@@ -1526,9 +1526,6 @@ const char *neterror()
 
 class CallbackHandler
 {
-  public:
-	void CreateLobby(int nPlayers);
-
   private:
 	STEAM_CALLBACK(CallbackHandler, OnLobbyCreated, LobbyCreated_t);
 	STEAM_CALLBACK(CallbackHandler, OnP2PSessionRequest, P2PSessionRequest_t);
@@ -1538,13 +1535,10 @@ class CallbackHandler
 
 CallbackHandler handler;
 
-void CallbackHandler::CreateLobby(int nPlayers)
-{
-}
-
 void CallbackHandler::OnLobbyCreated(LobbyCreated_t *cb)
 {
 	Printf("Started a steam lobby with id: %lld\n", cb->m_ulSteamIDLobby);
+	SteamMatchmaking()->SetLobbyData(cb->m_ulSteamIDLobby, "amydoomowner", SteamFriends()->GetPersonaName());
 }
 
 void CallbackHandler::OnP2PSessionRequest(P2PSessionRequest_t *cb)

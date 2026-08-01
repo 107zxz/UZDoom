@@ -28,17 +28,15 @@
 #include "image.h"
 #include "textures.h"
 
-
 //==========================================================================
 //
 //
 //
 //==========================================================================
 
-FImageTexture::FImageTexture(FImageSource *img, int frame) noexcept
-: FTexture(img? img->LumpNum() : 0)
+FImageTexture::FImageTexture(FImageSource *img, int frame) noexcept : FTexture(img ? img->LumpNum() : 0)
 {
-	mImage = img;
+	mImage   = img;
 	TexFrame = frame;
 	if (img != nullptr)
 	{
@@ -54,10 +52,10 @@ FImageTexture::~FImageTexture()
 void FImageTexture::SetFromImage()
 {
 	auto img = mImage;
-	Width = img->GetWidth();
-	Height = img->GetHeight();
+	Width    = img->GetWidth();
+	Height   = img->GetHeight();
 
-	Masked = img->bMasked;
+	Masked       = img->bMasked;
 	bTranslucent = img->bTranslucent;
 }
 //===========================================================================
@@ -68,7 +66,7 @@ void FImageTexture::SetFromImage()
 
 FBitmap FImageTexture::GetBgraBitmap(const PalEntry *p, int *trans)
 {
-	return mImage->GetCachedBitmap(p, bNoRemap0? FImageSource::noremap0 : FImageSource::normal, trans, TexFrame);
+	return mImage->GetCachedBitmap(p, bNoRemap0 ? FImageSource::noremap0 : FImageSource::normal, trans, TexFrame);
 }
 
 //===========================================================================
@@ -79,7 +77,10 @@ FBitmap FImageTexture::GetBgraBitmap(const PalEntry *p, int *trans)
 
 TArray<uint8_t> FImageTexture::Get8BitPixels(bool alpha)
 {
-	return mImage->GetPalettedPixels(alpha? FImageSource::luminance : bNoRemap0 ? FImageSource::noremap0 : FImageSource::normal, TexFrame);
+	return mImage->GetPalettedPixels(alpha       ? FImageSource::luminance
+	                                 : bNoRemap0 ? FImageSource::noremap0
+	                                             : FImageSource::normal,
+	                                 TexFrame);
 }
 
 //===========================================================================
@@ -101,8 +102,7 @@ bool FImageTexture::DetermineTranslucency()
 	}
 }
 
-
-FTexture* CreateImageTexture(FImageSource* img, int frame) noexcept
+FTexture *CreateImageTexture(FImageSource *img, int frame) noexcept
 {
 	return new FImageTexture(img, frame);
 }

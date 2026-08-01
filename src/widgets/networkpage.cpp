@@ -20,9 +20,9 @@
 #include <zwidget/widgets/dropdown/dropdown.h>
 #include <zwidget/widgets/lineedit/lineedit.h>
 #include <zwidget/widgets/listview/listview.h>
+#include <zwidget/widgets/pushbutton/pushbutton.h>
 #include <zwidget/widgets/tabwidget/tabwidget.h>
 #include <zwidget/widgets/textlabel/textlabel.h>
-#include <zwidget/widgets/pushbutton/pushbutton.h>
 
 #include "gstrings.h"
 #include "i_interface.h"
@@ -33,17 +33,18 @@
 
 constexpr double EditHeight = 24.0;
 
-NetworkPage::NetworkPage(LauncherWindow* launcher, const FStartupSelectionInfo& info) : Widget(nullptr), Launcher(launcher)
+NetworkPage::NetworkPage(LauncherWindow *launcher, const FStartupSelectionInfo &info)
+	: Widget(nullptr), Launcher(launcher)
 {
-	ParametersEdit = new LineEdit(this);
-	ParametersLabel = new TextLabel(this);
-	SaveFileEdit = new LineEdit(this);
-	SaveFileLabel = new TextLabel(this);
-	SaveFileCheckbox = new CheckboxLabel(this);
+	ParametersEdit         = new LineEdit(this);
+	ParametersLabel        = new TextLabel(this);
+	SaveFileEdit           = new LineEdit(this);
+	SaveFileLabel          = new TextLabel(this);
+	SaveFileCheckbox       = new CheckboxLabel(this);
 	SaveParametersCheckbox = new CheckboxLabel(this);
-	IWADsDropdown = new Dropdown(this);
-	PlayerClassLabel = new TextLabel(this);
-	PlayerClassEdit = new LineEdit(this);
+	IWADsDropdown          = new Dropdown(this);
+	PlayerClassLabel       = new TextLabel(this);
+	PlayerClassEdit        = new LineEdit(this);
 
 	SaveFileCheckbox->SetChecked(info.bSaveNetFile);
 	if (!info.DefaultNetSaveFile.IsEmpty())
@@ -54,12 +55,12 @@ NetworkPage::NetworkPage(LauncherWindow* launcher, const FStartupSelectionInfo& 
 		ParametersEdit->SetText(info.DefaultNetArgs.GetChars());
 
 	StartPages = new TabWidget(this);
-	HostPage = new HostSubPage(this, info);
-	JoinPage = new JoinSubPage(this, info);
+	HostPage   = new HostSubPage(this, info);
+	JoinPage   = new JoinSubPage(this, info);
 
-	for (const auto& wad : *info.Wads)
+	for (const auto &wad : *info.Wads)
 	{
-		const char* filepart = strrchr(wad.Path.GetChars(), '/');
+		const char *filepart = strrchr(wad.Path.GetChars(), '/');
 		if (filepart == nullptr)
 			filepart = wad.Path.GetChars();
 		else
@@ -80,7 +81,7 @@ NetworkPage::NetworkPage(LauncherWindow* launcher, const FStartupSelectionInfo& 
 
 // This has to be done after the main page is parented, otherwise it won't have the correct
 // info to pull from.
-void NetworkPage::InitializeTabs(const FStartupSelectionInfo& info)
+void NetworkPage::InitializeTabs(const FStartupSelectionInfo &info)
 {
 	StartPages->AddTab(HostPage, "Host");
 	StartPages->AddTab(JoinPage, "Join");
@@ -106,7 +107,7 @@ void NetworkPage::OnSetFocus()
 	IWADsDropdown->SetFocus();
 }
 
-void NetworkPage::SetValues(FStartupSelectionInfo& info) const
+void NetworkPage::SetValues(FStartupSelectionInfo &info) const
 {
 	info.DefaultNetIWAD = IWADsDropdown->GetSelectedItem();
 	info.DefaultNetArgs = ParametersEdit->GetText();
@@ -125,7 +126,7 @@ void NetworkPage::SetValues(FStartupSelectionInfo& info) const
 
 	info.bSaveNetFile = SaveFileCheckbox->GetChecked();
 	info.bSaveNetArgs = SaveParametersCheckbox->GetChecked();
-	const auto save = SaveFileEdit->GetText();
+	const auto save   = SaveFileEdit->GetText();
 	if (!save.empty())
 		info.AdditionalNetArgs.AppendFormat(" -loadgame \"%s\"", save.c_str());
 	const auto pClass = PlayerClassEdit->GetText();
@@ -195,10 +196,10 @@ void NetworkPage::UpdateLanguage()
 	JoinPage->UpdateLanguage();
 }
 
-HostSubPage::HostSubPage(NetworkPage* main, const FStartupSelectionInfo& info) : Widget(nullptr), MainTab(main)
+HostSubPage::HostSubPage(NetworkPage *main, const FStartupSelectionInfo &info) : Widget(nullptr), MainTab(main)
 {
-	TicDupLabel = new TextLabel(this);
-	TicDupDropdown = new Dropdown(this);
+	TicDupLabel      = new TextLabel(this);
+	TicDupDropdown   = new Dropdown(this);
 	ExtraTicCheckbox = new CheckboxLabel(this);
 
 	TicDupDropdown->AddItem("35 Hz");
@@ -208,8 +209,8 @@ HostSubPage::HostSubPage(NetworkPage* main, const FStartupSelectionInfo& info) :
 
 	ExtraTicCheckbox->SetChecked(info.DefaultNetExtraTic);
 
-	GameModesLabel = new TextLabel(this);
-	GameModesDropdown = new Dropdown(this);
+	GameModesLabel        = new TextLabel(this);
+	GameModesDropdown     = new Dropdown(this);
 	AltDeathmatchCheckbox = new CheckboxLabel(this);
 
 	GameModesDropdown->AddItem("None");
@@ -219,7 +220,7 @@ HostSubPage::HostSubPage(NetworkPage* main, const FStartupSelectionInfo& info) :
 	GameModesDropdown->SetSelectedItem(max<int>(info.DefaultNetGameMode, 0));
 
 	TeamLabel = new TextLabel(this);
-	TeamEdit = new LineEdit(this);
+	TeamEdit  = new LineEdit(this);
 
 	AltDeathmatchCheckbox->SetChecked(info.DefaultNetAltDM);
 
@@ -227,10 +228,10 @@ HostSubPage::HostSubPage(NetworkPage* main, const FStartupSelectionInfo& info) :
 	TeamEdit->SetNumericMode(true);
 	TeamEdit->SetTextInt(info.DefaultNetHostTeam);
 
-	MaxPlayersEdit = new LineEdit(this);
-	PortEdit = new LineEdit(this);
+	MaxPlayersEdit  = new LineEdit(this);
+	PortEdit        = new LineEdit(this);
 	MaxPlayersLabel = new TextLabel(this);
-	PortLabel = new TextLabel(this);
+	PortLabel       = new TextLabel(this);
 
 	MaxPlayersEdit->SetMaxLength(2);
 	MaxPlayersEdit->SetNumericMode(true);
@@ -241,15 +242,15 @@ HostSubPage::HostSubPage(NetworkPage* main, const FStartupSelectionInfo& info) :
 		PortEdit->SetTextInt(info.DefaultNetHostPort);
 
 	MaxPlayerHintLabel = new TextLabel(this);
-	PortHintLabel = new TextLabel(this);
-	TeamHintLabel = new TextLabel(this);
+	PortHintLabel      = new TextLabel(this);
+	TeamHintLabel      = new TextLabel(this);
 
 	MaxPlayerHintLabel->SetStyleColor("color", Theme::getMain(COLOR_MIX));
 	PortHintLabel->SetStyleColor("color", Theme::getMain(COLOR_MIX));
 	TeamHintLabel->SetStyleColor("color", Theme::getMain(COLOR_MIX));
 }
 
-void HostSubPage::SetValues(FStartupSelectionInfo& info) const
+void HostSubPage::SetValues(FStartupSelectionInfo &info) const
 {
 	info.AdditionalNetArgs = "";
 
@@ -275,27 +276,26 @@ void HostSubPage::SetValues(FStartupSelectionInfo& info) const
 		info.DefaultNetHostPort = 0;
 	}
 
-	info.DefaultNetAltDM = AltDeathmatchCheckbox->GetChecked();
+	info.DefaultNetAltDM    = AltDeathmatchCheckbox->GetChecked();
 	info.DefaultNetGameMode = GameModesDropdown->GetSelectedItem();
 	switch (info.DefaultNetGameMode)
 	{
 	case 1:
 		info.AdditionalNetArgs.AppendFormat(" -coop");
 		break;
-	case 3:
+	case 3: {
+		info.AdditionalNetArgs.AppendFormat(" +teamplay 1");
+		int team = 255;
+		if (!TeamEdit->GetText().empty())
 		{
-			info.AdditionalNetArgs.AppendFormat(" +teamplay 1");
-			int team = 255;
-			if (!TeamEdit->GetText().empty())
-			{
-				team = TeamEdit->GetTextInt();
-				if (team < 0 || team > 255)
-					team = 255;
-			}
-			info.AdditionalNetArgs.AppendFormat(" +team %d", team);
-			info.DefaultNetHostTeam = team;
+			team = TeamEdit->GetTextInt();
+			if (team < 0 || team > 255)
+				team = 255;
 		}
-		break;
+		info.AdditionalNetArgs.AppendFormat(" +team %d", team);
+		info.DefaultNetHostTeam = team;
+	}
+	break;
 	case 2:
 		if (AltDeathmatchCheckbox->GetChecked())
 			info.AdditionalNetArgs.AppendFormat(" -altdeath");
@@ -332,11 +332,11 @@ void HostSubPage::OnGeometryChanged()
 	const double h = GetHeight();
 
 	constexpr double LabelOfsSize = 100.0;
-	constexpr double hintOfs = 160.0;
+	constexpr double hintOfs      = 160.0;
 	constexpr double DropdownSize = 220.0;
-	constexpr double EditWidth = 55.0;
+	constexpr double EditWidth    = 55.0;
 
-	double y = 0.0;
+	double       y     = 0.0;
 	const double wSize = w * 0.5;
 
 	MaxPlayersLabel->SetFrameGeometry(0.0, y, LabelOfsSize, MaxPlayersLabel->GetPreferredHeight());
@@ -375,7 +375,7 @@ void HostSubPage::OnGeometryChanged()
 	MainTab->UpdatePlayButton();
 }
 
-JoinSubPage::JoinSubPage(NetworkPage* main, const FStartupSelectionInfo& info) : Widget(nullptr), MainTab(main)
+JoinSubPage::JoinSubPage(NetworkPage *main, const FStartupSelectionInfo &info) : Widget(nullptr), MainTab(main)
 {
 	// AddressEdit = new LineEdit(this);
 	// AddressPortEdit = new LineEdit(this);
@@ -388,14 +388,14 @@ JoinSubPage::JoinSubPage(NetworkPage* main, const FStartupSelectionInfo& info) :
 	// if (info.DefaultNetJoinPort > 0)
 	// 	AddressPortEdit->SetTextInt(info.DefaultNetJoinPort);
 
-	LobbyList = new ListView(this);
+	LobbyList     = new ListView(this);
 	RefreshButton = new PushButton(this);
 
-	RefreshButton->OnClick = [this] {SteamMatchmaking()->RequestLobbyList();};
+	RefreshButton->OnClick = [this] { SteamMatchmaking()->RequestLobbyList(); };
 
 	TeamDeathmatchLabel = new TextLabel(this);
-	TeamLabel = new TextLabel(this);
-	TeamEdit = new LineEdit(this);
+	TeamLabel           = new TextLabel(this);
+	TeamEdit            = new LineEdit(this);
 
 	TeamEdit->SetMaxLength(3);
 	TeamEdit->SetNumericMode(true);
@@ -408,7 +408,7 @@ JoinSubPage::JoinSubPage(NetworkPage* main, const FStartupSelectionInfo& info) :
 	TeamHintLabel->SetStyleColor("color", Theme::getMain(COLOR_MIX));
 }
 
-void JoinSubPage::SetValues(FStartupSelectionInfo& info) const
+void JoinSubPage::SetValues(FStartupSelectionInfo &info) const
 {
 	// FString addr = AddressEdit->GetText();
 	// info.DefaultNetAddress = addr;
@@ -456,7 +456,7 @@ void JoinSubPage::OnGeometryChanged()
 	const double h = GetHeight();
 
 	constexpr double LabelOfsSize = 100.0;
-	constexpr double hintOfs = 160.0;
+	constexpr double hintOfs      = 160.0;
 
 	const double bottomPanelWidth = w - 10.0;
 
@@ -482,22 +482,32 @@ void JoinSubPage::OnGeometryChanged()
 	// TeamDeathmatchLabel->SetFrameGeometry(210.0, y * 0.0, w, TeamDeathmatchLabel->GetPreferredHeight());
 	// y += TeamDeathmatchLabel->GetPreferredHeight();
 
-	TeamLabel->SetFrameGeometry(RefreshButton->GetWidth()+40.0, y * 0.0, LabelOfsSize, TeamLabel->GetPreferredHeight());
-	TeamEdit->SetFrameGeometry(RefreshButton->GetWidth()+80.0, y*0.0, 55.0, EditHeight);
-	TeamHintLabel->SetFrameGeometry(RefreshButton->GetWidth()+160.0, y*0.0, w - hintOfs, TeamHintLabel->GetPreferredHeight());
+	TeamLabel->SetFrameGeometry(RefreshButton->GetWidth() + 40.0, y * 0.0, LabelOfsSize,
+	                            TeamLabel->GetPreferredHeight());
+	TeamEdit->SetFrameGeometry(RefreshButton->GetWidth() + 80.0, y * 0.0, 55.0, EditHeight);
+	TeamHintLabel->SetFrameGeometry(RefreshButton->GetWidth() + 160.0, y * 0.0, w - hintOfs,
+	                                TeamHintLabel->GetPreferredHeight());
 
 	MainTab->UpdatePlayButton();
 }
 
-void JoinSubPage::OnLobbySearch(LobbyMatchList_t* cb) {
+void JoinSubPage::OnLobbySearch(LobbyMatchList_t *cb)
+{
 
 	int l = LobbyList->GetItemAmount();
-	for (int i = 0; i<l; i++)
-	LobbyList->RemoveItem();
+	for (int i = 0; i < l; i++)
+		LobbyList->RemoveItem();
 
-	for (uint32 i = 0; i < cb->m_nLobbiesMatching; i++) {
+	for (uint32 i = 0; i < cb->m_nLobbiesMatching; i++)
+	{
 		CSteamID lobbyID = SteamMatchmaking()->GetLobbyByIndex(i);
 
-		LobbyList->AddItem(std::to_string(lobbyID.ConvertToUint64()));
+		const char *datkey;
+
+		// SteamMatchmaking()->GetLobbyDataByIndex(lobbyID, 0, datkey, 20, datval, 20);
+		datkey = SteamMatchmaking()->GetLobbyData(lobbyID, "amydoomowner");
+
+		if (datkey[0] != '\0')
+			LobbyList->AddItem(datkey);
 	}
 }

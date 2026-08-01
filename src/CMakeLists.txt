@@ -1037,6 +1037,7 @@ set (PCH_SOURCES
 	common/textures/formats/patchtexture.cpp
 	common/textures/formats/pcxtexture.cpp
 	common/textures/formats/pngtexture.cpp
+	common/textures/formats/asetexture.cpp
 	common/textures/formats/rawpagetexture.cpp
 	common/textures/formats/startuptexture.cpp
 	common/textures/formats/emptytexture.cpp
