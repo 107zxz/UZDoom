@@ -45,7 +45,7 @@
 class FASETexture : public FImageSource
 {
   public:
-	FASETexture(FileReader &lump, int lumpnum, int width, int height, uint8_t *out);
+	FASETexture(FileReader &lump, int lumpnum, int width, int height, int nFrames, uint8_t **frameBuffers);
 	~FASETexture();
 
 	int            CopyPixels(FBitmap *bmp, int conversion, int frame = 0) override;
@@ -55,7 +55,7 @@ class FASETexture : public FImageSource
 	void ReadAlphaRemap(FileReader *lump, uint8_t *alpharemap);
 	void SetupPalette(FileReader &lump);
 
-	uint8_t *imageData;
+	uint8_t **framesData;
 };
 
 //==========================================================================
@@ -78,104 +78,114 @@ FImageSource *ASEImage_TryCreate(FileReader &data, int lumpnum)
 	int imHeight = data.ReadUInt16();
 
 	// Decompress the first cel - grab 1st frame
-	data.Seek(128 + 12, FileReader::SeekSet);
+	data.Seek(128, FileReader::SeekSet);
 
-	uint32_t chunks = data.ReadUInt32();
+	uint8_t **frames = new uint8_t *[nFrames];
 
-	uint8_t *frameBuffer = new uint8_t[imWidth * 4 * imHeight]{};
-
-	for (uint32_t c = 0; c < chunks; c++)
+	// Read frame
+	for (int frame = 0; frame < nFrames; frame++)
 	{
-		uint32_t chunksize = data.ReadUInt32();
-		uint16_t chunktype = data.ReadUInt16();
+		data.Seek(12, FileReader::SeekCur);
 
-		if (chunktype == 0x2005)
+		uint32_t chunks = data.ReadUInt32();
+
+		uint8_t *frameBuffer = new uint8_t[imWidth * 4 * imHeight]{};
+
+		for (uint32_t c = 0; c < chunks; c++)
 		{
-			Printf("\nFound one cel chunk!\n");
+			uint32_t chunksize = data.ReadUInt32();
+			uint16_t chunktype = data.ReadUInt16();
 
-			// Skip the extra meta
-			data.Seek(2, FileReader::SeekCur);
-
-			int celOfX = data.ReadInt16();
-			int celOfY = data.ReadInt16();
-
-			data.Seek(1, FileReader::SeekCur);
-
-			uint16_t celtype = data.ReadUInt16();
-			assert(celtype == 2);
-
-			data.Seek(7, FileReader::SeekCur);
-			int celWidth  = data.ReadUInt16();
-			int celheight = data.ReadUInt16();
-
-			z_stream strm;
-			// Read file into input buf
-
-			size_t stream_length = chunksize - 6 - 7 - 9 - 4;
-
-			uint8_t  in[4096];
-			int      pixwidth = 4 * celWidth;
-			uint8_t *out      = new uint8_t[pixwidth * celheight];
-			data.Read(in, stream_length);
-
-			strm.zalloc   = NULL;
-			strm.zfree    = Z_NULL;
-			strm.opaque   = Z_NULL;
-			strm.avail_in = stream_length;
-			strm.next_in  = (uint8_t *)in;
-			int ret       = inflateInit(&strm);
-			if (ret != Z_OK)
-				perror("zlib");
-			do
+			if (chunktype == 0x2005)
 			{
-				strm.avail_out = pixwidth * celheight;
-				strm.next_out  = out;
-				ret            = inflate(&strm, Z_NO_FLUSH);
-				assert(ret != Z_STREAM_ERROR);
-				switch (ret)
+				Printf("\nFound one cel chunk!\n");
+
+				// Skip the extra meta
+				data.Seek(2, FileReader::SeekCur);
+
+				int celOfX = data.ReadInt16();
+				int celOfY = data.ReadInt16();
+
+				data.Seek(1, FileReader::SeekCur);
+
+				uint16_t celtype = data.ReadUInt16();
+				assert(celtype == 2);
+
+				data.Seek(7, FileReader::SeekCur);
+				int celWidth  = data.ReadUInt16();
+				int celheight = data.ReadUInt16();
+
+				z_stream strm;
+				// Read file into input buf
+
+				size_t stream_length = chunksize - 6 - 7 - 9 - 4;
+
+				uint8_t  in[4096];
+				int      pixwidth = 4 * celWidth;
+				uint8_t *out      = new uint8_t[pixwidth * celheight];
+				data.Read(in, stream_length);
+
+				strm.zalloc   = NULL;
+				strm.zfree    = Z_NULL;
+				strm.opaque   = Z_NULL;
+				strm.avail_in = stream_length;
+				strm.next_in  = (uint8_t *)in;
+				int ret       = inflateInit(&strm);
+				if (ret != Z_OK)
+					perror("zlib");
+				do
 				{
-				case Z_NEED_DICT:
-					ret = Z_DATA_ERROR;
-					/* falls through */
-				case Z_DATA_ERROR:
-				case Z_MEM_ERROR:
-					inflateEnd(&strm);
-					break;
-				}
-			} while (strm.avail_out == 0);
+					strm.avail_out = pixwidth * celheight;
+					strm.next_out  = out;
+					ret            = inflate(&strm, Z_NO_FLUSH);
+					assert(ret != Z_STREAM_ERROR);
+					switch (ret)
+					{
+					case Z_NEED_DICT:
+						ret = Z_DATA_ERROR;
+						/* falls through */
+					case Z_DATA_ERROR:
+					case Z_MEM_ERROR:
+						inflateEnd(&strm);
+						break;
+					}
+				} while (strm.avail_out == 0);
 
-			inflateEnd(&strm);
-			if (ret != Z_STREAM_END)
-			{
-				puts("NOOOOOOO");
+				inflateEnd(&strm);
+				if (ret != Z_STREAM_END)
+				{
+					puts("NOOOOOOO");
+				}
+				else
+				{
+					// Blit onto the out thing
+					for (int i = 0; i < celWidth * celheight; i++)
+					{
+						// Skip stuff out of range of the frame
+						if ((i / celWidth) + celOfY >= imHeight || (i / celWidth) + celOfY < 0)
+							continue;
+
+						if ((i % celWidth) + celOfX < 0 || (i % celWidth) + celOfX >= imWidth)
+							continue;
+
+						// Skip fully transparent stuff. We can add blending later
+						if (out[i * 4 + 3] == 0x00)
+							continue;
+
+						((uint32_t *)frameBuffer)[i % (celWidth) + celOfX + (i / celWidth + celOfY) * imWidth] =
+							((uint32_t *)out)[i];
+					}
+				}
+				delete[] out;
 			}
 			else
-			{
-				// Blit onto the out thing
-				for (int i = 0; i < celWidth * celheight; i++)
-				{
-					// Skip stuff out of range of the frame
-					if ((i / celWidth) + celOfY >= imHeight || (i / celWidth) + celOfY < 0)
-						continue;
-
-					if ((i % celWidth) + celOfX < 0 || (i % celWidth) + celOfX >= imWidth)
-						continue;
-
-					// Skip fully transparent stuff. We can add blending later
-					if (out[i * 4 + 3] == 0x00)
-						continue;
-
-					((uint32_t *)frameBuffer)[i % (celWidth) + celOfX + (i / celWidth + celOfY) * imWidth] =
-						((uint32_t *)out)[i];
-				}
-			}
-			delete[] out;
+				data.Seek(chunksize - 6, FileReader::SeekCur);
 		}
-		else
-			data.Seek(chunksize - 6, FileReader::SeekCur);
+
+		frames[frame] = frameBuffer;
 	}
 
-	return new FASETexture(data, lumpnum, imWidth, imHeight, frameBuffer);
+	return new FASETexture(data, lumpnum, imWidth, imHeight, nFrames, frames);
 }
 
 //==========================================================================
@@ -186,10 +196,14 @@ FImageSource *ASEImage_TryCreate(FileReader &data, int lumpnum)
 
 FASETexture::~FASETexture()
 {
-	delete[] imageData;
+	for (int i = 0; i < NumOfFrames; i++)
+		delete[] framesData[i];
+
+	delete[] framesData;
 }
 
-FASETexture::FASETexture(FileReader &lump, int lumpnum, int width, int height, uint8_t *out) : FImageSource(lumpnum)
+FASETexture::FASETexture(FileReader &lump, int lumpnum, int width, int height, int nFrames, uint8_t **frames)
+	: FImageSource(lumpnum)
 {
 	Width  = width;
 	Height = height;
@@ -197,7 +211,8 @@ FASETexture::FASETexture(FileReader &lump, int lumpnum, int width, int height, u
 	LeftOffset = width / 2;
 	TopOffset  = height;
 
-	imageData = out;
+	framesData  = frames;
+	NumOfFrames = nFrames;
 }
 
 void FASETexture::SetupPalette(FileReader &lump)
@@ -254,7 +269,7 @@ int FASETexture::CopyPixels(FBitmap *bmp, int conversion, int frame)
 	// 	Pixels[i + 3] = imageData[3 + i];
 	// }
 
-	bmp->CopyPixelDataRGB(0, 0, imageData, pixwidth, Height, 4, pixwidth, 0, CF_RGBA);
+	bmp->CopyPixelDataRGB(0, 0, framesData[frame], pixwidth, Height, 4, pixwidth, 0, CF_RGBA);
 	// memset(bmp->GetPixels(), 0x0, bmp->GetBufferSize());
 	return 0;
 }
