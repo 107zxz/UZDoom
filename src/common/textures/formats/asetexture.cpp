@@ -98,8 +98,6 @@ FImageSource *ASEImage_TryCreate(FileReader &data, int lumpnum)
 
 			if (chunktype == 0x2005)
 			{
-				Printf("\nFound one cel chunk!\n");
-
 				// Skip the extra meta
 				data.Seek(2, FileReader::SeekCur);
 
@@ -120,7 +118,7 @@ FImageSource *ASEImage_TryCreate(FileReader &data, int lumpnum)
 
 				size_t stream_length = chunksize - 6 - 7 - 9 - 4;
 
-				uint8_t  in[4096];
+				uint8_t *in       = new uint8_t[stream_length];
 				int      pixwidth = 4 * celWidth;
 				uint8_t *out      = new uint8_t[pixwidth * celheight];
 				data.Read(in, stream_length);
@@ -176,6 +174,7 @@ FImageSource *ASEImage_TryCreate(FileReader &data, int lumpnum)
 							((uint32_t *)out)[i];
 					}
 				}
+				delete[] in;
 				delete[] out;
 			}
 			else

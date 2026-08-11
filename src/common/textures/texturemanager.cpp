@@ -1102,11 +1102,7 @@ void FTextureManager::ExpandAseTextures(int wadnum)
 		auto name = fileSystem.GetFileFullName(i);
 
 		if (strcmp(name + (strlen(name) - 4), ".ase") != 0)
-			continue;
-
-		// TODO: Extra name matching
-
-		Printf("Found an aseprite: %s\n", name);
+		  continue;
 
 		// Get existing texture and start doing some EVIL!
 
@@ -1116,7 +1112,7 @@ void FTextureManager::ExpandAseTextures(int wadnum)
 		// Swap frame number
 		newName[4] = 'A';
 
-		auto tex = CreateTextureFromLump(i, false, 0);
+		auto tex = CreateTextureFromLump(i, true, 0);
 		AddGameTexture(MakeGameTexture(tex, newName, ETextureType::Sprite));
 		int frameCount = tex->GetImage()->GetNumOfFrames();
 
