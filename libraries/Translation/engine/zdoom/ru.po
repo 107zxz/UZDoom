@@ -2,15 +2,15 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
-"PO-Revision-Date: 2026-07-06 15:02+0000\n"
-"Last-Translator: Marcus Minhorst <marcus.minhorst@gmail.com>\n"
+"PO-Revision-Date: 2026-08-09 05:51+0000\n"
+"Last-Translator: Andrei Stepanov <adem4ik@gmail.com>\n"
 "Language-Team: Russian <https://hosted.weblate.org/projects/uzdoom/zdoom-engine-strings/ru/>\n"
 "Language: ru\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: Weblate 2026.7.1.dev0\n"
+"X-Generator: Weblate 2026.9.dev0\n"
 
 msgid "PRESSKEY"
 msgstr "Нажмите любую клавишу."
@@ -286,13 +286,13 @@ msgid "STSTR_DQDON"
 msgstr "Безграмотность: ВКЛ"
 
 msgid "STSTR_DQDOFF"
-msgstr "Безграмотность: ВЫКЛ"
+msgstr "Безграмотность: ОТКЛ"
 
 msgid "STSTR_DQD2ON"
 msgstr "Полная безграмотность: ВКЛ"
 
 msgid "STSTR_DQD2OFF"
-msgstr "Полная безграмотность: ВЫКЛ"
+msgstr "Полная безграмотность: ОТКЛ"
 
 msgid "STSTR_KFAADDED"
 msgstr "Боезапас на счастье пополнен"
@@ -304,13 +304,13 @@ msgid "STSTR_NCON"
 msgstr "Режим без столкновений: ВКЛ"
 
 msgid "STSTR_NCOFF"
-msgstr "Режим без столкновений: ВЫКЛ"
+msgstr "Режим без столкновений: ОТКЛ"
 
 msgid "STSTR_NC2ON"
 msgstr "Режим без столкновений 3D: ВКЛ"
 
 msgid "STSTR_NC2OFF"
-msgstr "Режим без столкновений 3D: ВЫКЛ"
+msgstr "Режим без столкновений 3D: ОТКЛ"
 
 # “inVuln”: Invulnerability sphere
 # “Str”: Berserk
@@ -337,19 +337,19 @@ msgid "TXT_BUDDHAON"
 msgstr "Режим Будды: ВКЛ"
 
 msgid "TXT_BUDDHAOFF"
-msgstr "Режим Будды: ВЫКЛ"
+msgstr "Режим Будды: ОТКЛ"
 
 msgid "TXT_BUDDHA2ON"
-msgstr "Окончательный режим Будды: ВКЛ"
+msgstr "Высший режим Будды: ВКЛ"
 
 msgid "TXT_BUDDHA2OFF"
-msgstr "Окончательный режим Будды: ВЫКЛ"
+msgstr "Высший режим Будды: ОТКЛ"
 
 msgid "TXT_CHEATPOWERON"
 msgstr "Сила: ВКЛ"
 
 msgid "TXT_CHEATPOWEROFF"
-msgstr "Сила: ВЫКЛ"
+msgstr "Сила: ОТКЛ"
 
 msgid "TXT_CHEATHEALTH"
 msgstr "Полное здоровье"
@@ -361,7 +361,7 @@ msgid "TXT_CHEATSOUNDON"
 msgstr "Отладка звука: ВКЛ"
 
 msgid "TXT_CHEATSOUNDOFF"
-msgstr "Отладка звука: ВЫКЛ"
+msgstr "Отладка звука: ОТКЛ"
 
 msgid "TXT_CHEATIDDQD"
 msgstr "Жульничаешь, э? Так умри!"
@@ -373,7 +373,7 @@ msgid "TXT_CHEATTICKERON"
 msgstr "Счётчик: ВКЛ"
 
 msgid "TXT_CHEATTICKEROFF"
-msgstr "Счётчик: ВЫКЛ"
+msgstr "Счётчик: ОТКЛ"
 
 msgid "TXT_CHEATARTIFACTS3"
 msgstr "Вы получили это"
@@ -388,7 +388,7 @@ msgid "TXT_FREEZEON"
 msgstr "Режим заморозки: ВКЛ"
 
 msgid "TXT_FREEZEOFF"
-msgstr "Режим заморозки: ВЫКЛ"
+msgstr "Режим заморозки: ОТКЛ"
 
 msgid "TXT_STRANGE"
 msgstr "Вы чувствуете себя странно…"
@@ -403,7 +403,7 @@ msgid "TXT_LEADBOOTSON"
 msgstr "Свинцовые сапоги: ВКЛ"
 
 msgid "TXT_LEADBOOTSOFF"
-msgstr "Свинцовые сапоги: ВЫКЛ"
+msgstr "Свинцовые сапоги: ОТКЛ"
 
 msgid "TXT_LIGHTER"
 msgstr "Вы чувствуете лёгкость"
@@ -415,7 +415,7 @@ msgid "TXT_NOTARGET_ON"
 msgstr "Незаметность: ВКЛ"
 
 msgid "TXT_NOTARGET_OFF"
-msgstr "Незаметность: ВЫКЛ"
+msgstr "Незаметность: ОТКЛ"
 
 msgid "TXT_ANUBIS_ON"
 msgstr "«Дрожите от страха!»"
@@ -427,7 +427,7 @@ msgid "TXT_CHASECAM_ON"
 msgstr "Вид от третьего лица: ВКЛ"
 
 msgid "TXT_CHASECAM_OFF"
-msgstr "Вид от третьего лица: ВЫКЛ"
+msgstr "Вид от третьего лица: ОТКЛ"
 
 msgid "TXT_BADDIE_KILLED"
 msgstr "1 плохиш убит"
@@ -451,10 +451,10 @@ msgid "TXT_WHAT_KILL"
 msgstr "Что вы хотите убить вне игры?"
 
 msgid "TXT_NOT_FROZEN"
-msgstr "Свойства замороженного игрока: ВЫКЛ"
+msgstr "Свойства замороженного игрока: ОТКЛ"
 
 msgid "AMSTR_FOLLOWOFF"
-msgstr "Привязка к игроку: ВЫКЛ"
+msgstr "Привязка к игроку: ОТКЛ"
 
 msgid "AMSTR_FOLLOWON"
 msgstr "Привязка к игроку: ВКЛ"
@@ -463,13 +463,13 @@ msgid "AMSTR_GRIDON"
 msgstr "Сетка: ВКЛ"
 
 msgid "AMSTR_GRIDOFF"
-msgstr "Сетка: ВЫКЛ"
+msgstr "Сетка: ОТКЛ"
 
 msgid "AMSTR_TEXON"
 msgstr "Текстурный режим: ВКЛ"
 
 msgid "AMSTR_TEXOFF"
-msgstr "Текстурный режим: ВЫКЛ"
+msgstr "Текстурный режим: ОТКЛ"
 
 msgid "AMSTR_MARKEDSPOT"
 msgstr "Отметка"
@@ -2781,7 +2781,6 @@ msgstr "Превосходная работа!"
 msgid "CE4TEXT"
 msgstr "Великолепно"
 
-#, fuzzy
 msgid "CLOADNET"
 msgstr ""
 "Невозможно загрузить сохранение в сетевом задании!\n"
@@ -2855,7 +2854,7 @@ msgstr "Режим неуязвимости: ВКЛ"
 
 msgctxt "chex"
 msgid "STSTR_DQDOFF"
-msgstr "Режим неуязвимости: ВЫКЛ"
+msgstr "Режим неуязвимости: ОТКЛ"
 
 msgctxt "chex"
 msgid "STSTR_FAADDED"
@@ -4345,7 +4344,7 @@ msgid "GLLIGHTMNU_TITLE"
 msgstr "Динамическое освещение"
 
 msgid "GLLIGHTMNU_LIGHTSENABLED"
-msgstr "Динамическое освещение (аппаратное)"
+msgstr "Динамические источники света"
 
 msgid "GLLIGHTMNU_LIGHTSPRITES"
 msgstr "Освещать спрайты"
@@ -4525,9 +4524,6 @@ msgstr "Линейная фильтрация при увеличении"
 msgid "TCMNU_MIPMAP"
 msgstr "Применять MIP-текстурирование"
 
-msgid "TCMNU_DYNLIGHTS"
-msgstr "Динамическое освещение (программное)"
-
 msgid "AUTOMAPMNU_SHOWKEYS_ALWAYS"
 msgstr "Всегда отображать ключи"
 
@@ -4566,9 +4562,7 @@ msgid "TXT_TOOOLDSG"
 msgstr "Сохранение «%s» из старой версии (%d). %e — последняя совместимая."
 
 # Shouldn’t this say “%e is the newest supported”?
-#
 # — Undead
-#
 # Ask Randi: The text is old. I won't change it.
 msgid "TXT_TOONEWSG"
 msgstr "Сохранение «%s» из новой версии (%d). %e — последняя совместимая."
@@ -5184,11 +5178,13 @@ msgstr "Дополнительное освещение"
 
 msgid "ACCMNU_TOOLTIP_LIGHT_RADIUS"
 msgstr ""
-"Управляет радиусом дальности света вокруг игрока в единицах карты. Большее значение сделает сцену ярче."
+"Управляет радиусом дальности света вокруг игрока в единицах карты. Большее "
+"значение сделает сцену ярче."
 
 msgid "ACCMNU_TOOLTIP_LIGHT_EXTRA"
 msgstr ""
-"Дополнительное освещение сектора уровня, добавленное к существующему уровню освещения сектора, сохраняя действующий режим освещения."
+"Дополнительное освещение сектора уровня, добавленное к существующему уровню "
+"освещения сектора, сохраняя действующий режим освещения."
 
 msgid "ACCMNU_LIGHT_RADIUS"
 msgstr "Радиус освещения игрока"
@@ -5229,33 +5225,43 @@ msgstr "Пожалуйста, отключите их перед настрой�
 
 msgid "DSPLYMNU_TOOLTIP_GAMMA"
 msgstr ""
-"Компенсирует ограничения вашего монитора. Настраивайте до тех пор, пока вертикальные серые блоки не исчезнут. Не используйте эту функцию для увеличения яркости игры, только для калибровки изображения под ваши настройки."
+"Компенсирует ограничения вашего монитора. Настраивайте до тех пор, пока "
+"вертикальные серые блоки не исчезнут. Не используйте эту функцию для "
+"увеличения яркости игры, только для калибровки изображения под ваши "
+"настройки."
 
 msgid "DSPLYMNU_BLACKPOINT"
 msgstr "Компенсация точки черного"
 
 msgid "DSPLYMNU_TOOLTIP_BLACKPOINT"
 msgstr ""
-"Компенсирует проблемы с мониторами, которые некорректно отображают темные пиксели. Настраивайте до тех пор, пока диагональные белые блоки не исчезнут. Не используйте эту функцию для увеличения яркости игры, только для калибровки изображения под вашу конфигурацию."
+"Компенсирует проблемы с мониторами, которые некорректно отображают темные "
+"пиксели. Настраивайте до тех пор, пока диагональные белые блоки не исчезнут."
+" Не используйте эту функцию для увеличения яркости игры, только для "
+"калибровки изображения под вашу конфигурацию."
 
 msgid "DSPLYMNU_TOOLTIP_IMAGEADJUST_RESET"
 msgstr "Сбросить все настройки в этом меню на значения по умолчанию."
 
 msgid "DSPLYMNU_TOOLTIP_BRIGHTNESS"
 msgstr ""
-"Применяет линейную регулировку яркости. Настройте под свои предпочтения или для лучшей видимости в темноте."
+"Применяет линейную регулировку яркости. Настройте под свои предпочтения или "
+"для лучшей видимости в темноте."
 
 msgid "DSPLYMNU_TOOLTIP_CONTRAST"
 msgstr ""
-"Регулирует воспринимаемую разницу между похожими цветами. Управляет резкостью/блеском изображений. Настраивается в соответствии с личным вкусом."
+"Регулирует воспринимаемую разницу между похожими цветами. Управляет "
+"резкостью/блеском изображений. Настраивается в соответствии с личным вкусом."
 
 msgid "DSPLYMNU_TOOLTIP_SATURATION"
 msgstr ""
-"Регулирует интенсивность цветов, делая изображение более ярким или приглушенным. Настройте по своему вкусу."
+"Регулирует интенсивность цветов, делая изображение более ярким или "
+"приглушенным. Настройте по своему вкусу."
 
 msgid "DSPLYMNU_IMAGEADJUST_BOTTOM"
 msgstr ""
-"Регулируйте настройки до тех пор, пока это изображение не приобретет однородный серый оттенок."
+"Регулируйте настройки до тех пор, пока это изображение не приобретет "
+"однородный серый оттенок."
 
 msgid "OPENALMNU_SUPERSTEREOWIDTH"
 msgstr "Длина суперстерео"
@@ -5364,3 +5370,172 @@ msgstr "Автоматически (Стандартный)"
 
 msgid "OPTVAL_VTAZDOOM"
 msgstr "Автоматически (ZDoom)"
+
+msgid "UPDATER_CHECK_FOR_UPDATES"
+msgstr "Проверить обновление"
+
+msgid "UPDATER_PROMPT_TO_INSTALL"
+msgstr "Предложить установить"
+
+msgid "UPDATER_SETTINGS"
+msgstr "Настройки обновления"
+
+msgid "UPDATER_INTERVAL"
+msgstr "Проверять каждый:"
+
+msgid "UPDATER_UPDATE_AVAILABLE"
+msgstr "Доступно новое обновление"
+
+msgid "UPDATER_UPDATE_SKIP"
+msgstr "Пропустить"
+
+msgid "UPDATER_TITLE"
+msgstr "Проверка обновлений"
+
+msgid "UPDATER_DISABLE"
+msgstr "Откл. проверку обновлений"
+
+msgid "UPDATER_CHECK_FAILED"
+msgstr "Проверка наличия обновлений завершилась неудачей"
+
+msgid "UPDATER_UPDATE_FAILED"
+msgstr "Обновление не установлено"
+
+msgid "UPDATER_YES_PROMPT"
+msgstr "Да и предложить установку"
+
+msgid "UPDATER_DISMISS_UPDATE"
+msgstr "Отклонить обновление?"
+
+msgid "UPDATER_ASK_AUTO"
+msgstr ""
+"Хотите проверять наличие обновлений автоматически ? \n"
+"(Это можно изменить во вкладке \"Параметры\")"
+
+msgid "UPDATER_ASK_INTERVAL"
+msgstr ""
+"Как часто вы хотели проверять наличие обновлений? \n"
+"(Это можно изменить во вкладке «Параметры»)"
+
+msgid "UPDATER_ZIP_FAIL"
+msgstr "Не удалось открыть zip-файл"
+
+msgid "UPDATER_ZIP_ERROR"
+msgstr "Не удалось распаковать zip-архив, ошибка: '{}' при записи файла '{}'"
+
+msgid "UPDATER_UPDATING"
+msgstr "Обновляем..."
+
+msgid "UPDATER_STARTING"
+msgstr "Начинаем скачивание..."
+
+msgid "UPDATER_SUCCESS"
+msgstr "Обновление прошло успешно, программа перезагружается."
+
+msgid "UPDATER_UP_TO_DATE"
+msgstr "Обновлено!"
+
+msgid "UPDATER_CANCELLED"
+msgstr "Обновление отменено"
+
+msgid "UPDATER_INVALID_JSON"
+msgstr "Неверное обновления JSON-файла"
+
+msgid "UPDATER_NOT_A_DIR"
+msgstr "'{}' не является директорией"
+
+msgid "OPTVAL_DISABLE"
+msgstr "Отключить"
+
+msgid "OPTVAL_NOTIFY"
+msgstr "Напомнить"
+
+msgid "OPTVAL_DAILY"
+msgstr "Ежедневно"
+
+msgid "OPTVAL_WEEKLY"
+msgstr "Еженедельно"
+
+msgid "OPTVAL_MONTHLY"
+msgstr "Ежемесячно"
+
+msgid "TXT_DOWNLOADING"
+msgstr "Скачиваем"
+
+msgid "TXT_EXPERIMENTAL"
+msgstr "Эксперементальный"
+
+msgid "TXT_UPDATE"
+msgstr "Обновление"
+
+msgid "TXT_UPDATED"
+msgstr "Обновлено"
+
+msgid "TXT_CANCELLED"
+msgstr "Отменено"
+
+msgid "TXT_BACK"
+msgstr "Назад"
+
+msgid "TXT_DISMISS"
+msgstr "Отклонить"
+
+msgid "TXT_SKIP"
+msgstr "Пропустить"
+
+msgid "TXT_CONFIRM"
+msgstr "Подтвердить"
+
+msgid "TXT_OK"
+msgstr "ОК"
+
+msgid "VALFORMAT_DB"
+msgstr "%s дБ"
+
+msgid "VALFORMAT_DB_P_METER"
+msgstr "%s дБ/м"
+
+msgid "VALFORMAT_DEGREES"
+msgstr "%s°"
+
+msgid "VALFORMAT_FPS"
+msgstr "%s кадр/с"
+
+msgid "VALFORMAT_HZ"
+msgstr "%s Гц"
+
+msgid "VALFORMAT_METER"
+msgstr "%s м"
+
+msgid "VALFORMAT_MSECOND"
+msgstr "%s мс"
+
+msgid "VALFORMAT_MULTIPLIER"
+msgstr "%s ×"
+
+msgid "VALFORMAT_PERCENT"
+msgstr "%s %%"
+
+msgid "VALFORMAT_SECOND"
+msgstr "%s с"
+
+msgid "MAPCOLORMNU_SECTORFILLALPHA"
+msgstr "Альфа-канал заливки"
+
+msgid "MAPCOLORMNU_SECTORFILLCOLOR"
+msgstr "Цвет заливки"
+
+msgid "ACCMNU_DOUBLECLICK_THRESHOLD"
+msgstr "Порог двойного щелчка"
+
+msgid "ACCMNU_TOOLTIP_DOUBLECLICK_THRESHOLD"
+msgstr "Интервал между последовательными нажатиями клавиш для срабатывания события двойного щелчка"
+
+msgid "CMPTMNU_TRANSFERSECRET"
+msgstr "Особый эффект BOOM при изменении пола передаёт секрет."
+
+msgid "PICKER_THEME"
+msgstr "Тема"
+
+msgid "OPTVAL_LIGHT"
+msgstr "Светлый"

@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
-"PO-Revision-Date: 2026-07-06 23:01+0000\n"
+"PO-Revision-Date: 2026-07-31 10:01+0000\n"
 "Last-Translator: Tapwave <kolb.rodrigue@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/uzdoom/common/fr/>\n"
 "Language: fr\n"
@@ -10,7 +10,7 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 2026.7.1.dev0\n"
+"X-Generator: Weblate 2026.8.dev0\n"
 
 msgid "PRESSYN"
 msgstr "Appuyez sur Y ou N."
@@ -60,7 +60,8 @@ msgid "TXT_SAY"
 msgstr "Parler :"
 
 msgid "TXT_QUITENDOOM"
-msgstr "Appuyez sur une touche ou cliquez n'importe où dans la fenètre pour quitter."
+msgstr ""
+"Appuyez sur une touche ou cliquez n'importe où dans la fenètre pour quitter."
 
 msgid "NEWSAVE"
 msgstr "<Nouveau Fichier de Sauvegarde>"
@@ -263,7 +264,6 @@ msgid "CNTRLMNU_SLOT1"
 msgstr "Emplacement D'Arme 1"
 
 # only show appropriate slots per game
-# 
 msgid "CNTRLMNU_SLOT2"
 msgstr "Emplacement D'Arme 2"
 
@@ -891,7 +891,8 @@ msgid "ADVSNDMNU_ADLCUSTOMBANK"
 msgstr "Utiliser banque WOPL perso"
 
 msgid "ADVSNDMNU_ADLUSEWADBANK"
-msgstr "Utiliser la banque GENMIDI contenue dans le WAD comme banque personalisée"
+msgstr ""
+"Utiliser la banque GENMIDI contenue dans le WAD comme banque personalisée"
 
 msgid "ADVSNDMNU_OPLBANKFILE"
 msgstr "Fichier Banque WOPL"
@@ -979,7 +980,7 @@ msgstr "DOSBox OPL3"
 msgid "OPTVAL_JAVAOPL3"
 msgstr "Java OPL3"
 
-msgid "OPTVAL_ESFMu"
+msgid "OPTVAL_ESFMU"
 msgstr "ESFMu OPL3"
 
 msgid "OPTVAL_YMFMOPL2"
@@ -1454,34 +1455,34 @@ msgstr "Modifier un Environnement"
 msgid "REVMNU_NEW"
 msgstr "Nouveau Environnement"
 
-msgid "REVMNU_Reflections_Scale"
+msgid "REVMNU_REFLECTIONS_SCALE"
 msgstr "Échelle Réflections"
 
-msgid "REVMNU_Reflections_Delay_Scale"
+msgid "REVMNU_REFLECTIONS_DELAY_SCALE"
 msgstr "Délai d'Échelle Réflections"
 
-msgid "REVMNU_Decay_Time_Scale"
+msgid "REVMNU_DECAY_TIME_SCALE"
 msgstr "Échelle Temporelle Decay"
 
-msgid "REVMNU_Decay_HF_Limit"
+msgid "REVMNU_DECAY_HF_LIMIT"
 msgstr "Seuil HF Decay"
 
-msgid "REVMNU_Reverb_Scale"
+msgid "REVMNU_REVERB_SCALE"
 msgstr "Échelle Reverb"
 
-msgid "REVMNU_Reverb_Delay_Scale"
+msgid "REVMNU_REVERB_DELAY_SCALE"
 msgstr "Délai d'échelle Réverb"
 
-msgid "REVMNU_Echo_Time_Scale"
+msgid "REVMNU_ECHO_TIME_SCALE"
 msgstr "Échelle Temporelle Écho"
 
-msgid "REVMNU_Modulation_Time_Scale"
+msgid "REVMNU_MODULATION_TIME_SCALE"
 msgstr "Échelle Temporelle Modulation"
 
-msgid "REVMNU_Based_on"
+msgid "REVMNU_BASED_ON"
 msgstr "Basé sur"
 
-msgid "REVMNU_Name"
+msgid "REVMNU_NAME"
 msgstr "Nom"
 
 msgid "REVMNU_ID_1"
@@ -1490,16 +1491,16 @@ msgstr "ID #1"
 msgid "REVMNU_ID_2"
 msgstr "ID #2"
 
-msgid "REVMNU_Create"
+msgid "REVMNU_CREATE"
 msgstr "Créer"
 
-msgid "REVMNU_Save"
+msgid "REVMNU_SAVE"
 msgstr "Sauvegarder…"
 
-msgid "REVMNU_File_name"
+msgid "REVMNU_FILE_NAME"
 msgstr "Nom de fichier"
 
-msgid "REVMNU_Environments_to_save"
+msgid "REVMNU_ENVIRONMENTS_TO_SAVE"
 msgstr "Environnements à sauvegarder"
 
 msgid "DSPLYMNU_VKOPT"
@@ -1597,9 +1598,6 @@ msgstr "Général"
 
 msgid "PICKER_EXTRA"
 msgstr "Graphiques Supplémentaires"
-
-msgid "PICKER_FULLSCREEN"
-msgstr "Plein Écran"
 
 msgid "PICKER_NOAUTOLOAD"
 msgstr "Désactiver le chargement automatique"
@@ -1760,7 +1758,7 @@ msgstr "Options d'Accessibilité"
 msgid "MSGMNU_MESSAGEQUEUE"
 msgstr "Longueur de la queue des messages"
 
-msgid "$MSGMNU_MESSAGEFADE"
+msgid "MSGMNU_MESSAGEFADE"
 msgstr "Durée du fondu des messages"
 
 msgid "MSGMNU_STACKIDENTICAL"
@@ -1792,3 +1790,115 @@ msgstr "À propos"
 
 msgid "PICKER_TAB_RELEASE"
 msgstr "Notes de Mise à Jour"
+
+# Jargon.
+msgid "REVMNU_ENVIRONMENT_SIZE"
+msgstr "Taille Environnement"
+
+# Jargon.
+msgid "REVMNU_ENVIRONMENT_DIFFUSION"
+msgstr "Diffusion Environnement"
+
+# Jargon.
+msgid "REVMNU_ROOM"
+msgstr "Salle"
+
+# Jargon.
+msgid "REVMNU_ROOM_HF"
+msgstr "HF Salle"
+
+# Jargon.
+msgid "REVMNU_ROOM_LF"
+msgstr "LF Salle"
+
+# Jargon.
+msgid "REVMNU_DECAY_TIME"
+msgstr "Temps Decay"
+
+# Jargon.
+msgid "REVMNU_DECAY_HF_RATIO"
+msgstr "Ratio de Decay HF"
+
+# Jargon.
+msgid "REVMNU_DECAY_LF_RATIO"
+msgstr "Ratio de Decay LF"
+
+# Jargon.
+msgid "REVMNU_REFLECTIONS"
+msgstr "Réflexions"
+
+# Jargon.
+msgid "REVMNU_REFLECTIONS_DELAY"
+msgstr "Délai Reflections"
+
+# Jargon.
+msgid "REVMNU_REFLECTIONS_PAN_X"
+msgstr "Orientation Reflections X"
+
+# Jargon.
+msgid "REVMNU_REFLECTIONS_PAN_Y"
+msgstr "Orientation Reflections Y"
+
+# Jargon.
+msgid "REVMNU_REFLECTIONS_PAN_Z"
+msgstr "Orientation Reflections Z"
+
+# Jargon.
+msgid "REVMNU_REVERB"
+msgstr "Réverbération"
+
+# Jargon.
+msgid "REVMNU_REVERB_DELAY"
+msgstr "Délai Reverb"
+
+# Jargon.
+msgid "REVMNU_REVERB_PAN_X"
+msgstr "Orientation Reverb X"
+
+# Jargon.
+msgid "REVMNU_REVERB_PAN_Y"
+msgstr "Orientation Reverb Y"
+
+# Jargon.
+msgid "REVMNU_REVERB_PAN_Z"
+msgstr "Orientation Reverb Z"
+
+# Jargon.
+msgid "REVMNU_ECHO_TIME"
+msgstr "Longueur écho"
+
+# Jargon.
+msgid "REVMNU_ECHO_DEPTH"
+msgstr "Profondeur écho"
+
+# Jargon.
+msgid "REVMNU_MODULATION_TIME"
+msgstr "Longueur Modulation"
+
+# Jargon.
+msgid "REVMNU_MODULATION_DEPTH"
+msgstr "Profondeur Modulation"
+
+# Jargon.
+msgid "REVMNU_AIR_ABSORPTION_HF"
+msgstr "Absorption Aérienne HF"
+
+# Jargon.
+msgid "REVMNU_HF_REFERENCE"
+msgstr "Référence HF"
+
+# Jargon.
+msgid "REVMNU_LF_REFERENCE"
+msgstr "Référence LF"
+
+# Jargon.
+msgid "REVMNU_ROOM_ROLLOFF_FACTOR"
+msgstr "Facteur de rolloff Salle"
+
+# Jargon.
+msgid "REVMNU_DIFFUSION"
+msgstr "Diffusion"
+
+# Jargon.
+msgid "REVMNU_DENSITY"
+msgstr "Densité"

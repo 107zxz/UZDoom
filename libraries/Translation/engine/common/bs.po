@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
-"PO-Revision-Date: 2026-05-05 22:16-0400\n"
+"PO-Revision-Date: 2026-07-13 23:20-0400\n"
 "Last-Translator: Marcus Minhorst <marcus.minhorst@gmail.com>\n"
 "Language-Team: Bosnian <https://hosted.weblate.org/projects/uzdoom/common/bs/>\n"
 "Language: bs\n"
@@ -10,7 +10,7 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
-"X-Generator: python 3.14.4 polib 1.2.0\n"
+"X-Generator: python 3.14.6 polib 1.2.0\n"
 
 msgid "PRESSYN"
 msgstr "Pritisnite Y ili N."
@@ -980,7 +980,7 @@ msgstr "DOSBox OPL3"
 msgid "OPTVAL_JAVAOPL3"
 msgstr "Java OPL3"
 
-msgid "OPTVAL_ESFMu"
+msgid "OPTVAL_ESFMU"
 msgstr "ESFMu OPL3"
 
 msgid "OPTVAL_YMFMOPL2"
@@ -1452,34 +1452,34 @@ msgstr "Uredi okruženje"
 msgid "REVMNU_NEW"
 msgstr "Novo okruženje"
 
-msgid "REVMNU_Reflections_Scale"
+msgid "REVMNU_REFLECTIONS_SCALE"
 msgstr "Skala refleksija"
 
-msgid "REVMNU_Reflections_Delay_Scale"
+msgid "REVMNU_REFLECTIONS_DELAY_SCALE"
 msgstr "Skala odgađanja refleksija"
 
-msgid "REVMNU_Decay_Time_Scale"
+msgid "REVMNU_DECAY_TIME_SCALE"
 msgstr "Vremenska skala raspadanja"
 
-msgid "REVMNU_Decay_HF_Limit"
+msgid "REVMNU_DECAY_HF_LIMIT"
 msgstr "Granica HF raspadanja"
 
-msgid "REVMNU_Reverb_Scale"
+msgid "REVMNU_REVERB_SCALE"
 msgstr "Skala odjeka"
 
-msgid "REVMNU_Reverb_Delay_Scale"
+msgid "REVMNU_REVERB_DELAY_SCALE"
 msgstr "Skala odgode reverb-a"
 
-msgid "REVMNU_Echo_Time_Scale"
+msgid "REVMNU_ECHO_TIME_SCALE"
 msgstr "Vrijeme odjeka"
 
-msgid "REVMNU_Modulation_Time_Scale"
+msgid "REVMNU_MODULATION_TIME_SCALE"
 msgstr "Vremenska skala modulacije"
 
-msgid "REVMNU_Based_on"
+msgid "REVMNU_BASED_ON"
 msgstr "Na osnovu"
 
-msgid "REVMNU_Name"
+msgid "REVMNU_NAME"
 msgstr "Ime"
 
 msgid "REVMNU_ID_1"
@@ -1488,16 +1488,16 @@ msgstr "ID br. 1"
 msgid "REVMNU_ID_2"
 msgstr "ID br. 2"
 
-msgid "REVMNU_Create"
+msgid "REVMNU_CREATE"
 msgstr "Napravi"
 
-msgid "REVMNU_Save"
+msgid "REVMNU_SAVE"
 msgstr "Sačuvaj…"
 
-msgid "REVMNU_File_name"
+msgid "REVMNU_FILE_NAME"
 msgstr "Naziv datoteke"
 
-msgid "REVMNU_Environments_to_save"
+msgid "REVMNU_ENVIRONMENTS_TO_SAVE"
 msgstr "Okruženja za spremanje"
 
 msgid "DSPLYMNU_VKOPT"
@@ -1595,9 +1595,6 @@ msgstr "Općenito"
 
 msgid "PICKER_EXTRA"
 msgstr "Dodatna grafika"
-
-msgid "PICKER_FULLSCREEN"
-msgstr "Cijeli Ekran"
 
 msgid "PICKER_NOAUTOLOAD"
 msgstr "Onemogućite automatsko učitavanje"

@@ -2,7 +2,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: 1.0\n"
-"PO-Revision-Date: 2026-07-06 21:01+0000\n"
+"PO-Revision-Date: 2026-07-31 10:01+0000\n"
 "Last-Translator: Tapwave <kolb.rodrigue@gmail.com>\n"
 "Language-Team: French <https://hosted.weblate.org/projects/uzdoom/zdoom-engine-strings/fr/>\n"
 "Language: fr\n"
@@ -10,7 +10,7 @@ msgstr ""
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n > 1;\n"
-"X-Generator: Weblate 2026.7.1.dev0\n"
+"X-Generator: Weblate 2026.8.dev0\n"
 
 msgid "PRESSKEY"
 msgstr "Appuyez sur une touche."
@@ -2071,7 +2071,8 @@ msgid "MSG_TALISMANRED"
 msgstr "Vous avez le sentiment qu'il ne fallait pas y toucher…"
 
 msgid "MSG_TALISMANGREEN"
-msgstr "Quel que soit cette chose, elle n'aurait pas dû arriver dans ce monde…"
+msgstr ""
+"Quel que soit cette chose, elle n'aurait pas dû arriver dans ce monde…"
 
 msgid "MSG_TALISMANBLUE"
 msgstr "Ca doit servir à quelque chose…"
@@ -2500,7 +2501,8 @@ msgid "OB_MPPOISONBOLT"
 msgstr "%o a recu une dose létale de la colère de %k."
 
 msgid "OB_MPASSAULTGUN"
-msgstr "%o s'est fait@[e_fr] percer dans tous les sens par le fusil d'assaut de %k."
+msgstr ""
+"%o s'est fait@[e_fr] percer dans tous les sens par le fusil d'assaut de %k."
 
 msgid "OB_MPMINIMISSILELAUNCHER"
 msgstr "%o a avalé le missile de %k."
@@ -4345,7 +4347,7 @@ msgid "GLLIGHTMNU_TITLE"
 msgstr "Lumières Dynamiques"
 
 msgid "GLLIGHTMNU_LIGHTSENABLED"
-msgstr "Lumières Dynamiques (Hardware)"
+msgstr "Lumières Dynamiques"
 
 msgid "GLLIGHTMNU_LIGHTSPRITES"
 msgstr "Lumières affectent les sprites"
@@ -4525,9 +4527,6 @@ msgstr "Filtrage linéaire en agrandissement d'échelle"
 msgid "TCMNU_MIPMAP"
 msgstr "Utiliser textures mipmappées"
 
-msgid "TCMNU_DYNLIGHTS"
-msgstr "Lumières dynamiques (Logiciel)"
-
 msgid "AUTOMAPMNU_SHOWKEYS_ALWAYS"
 msgstr "Toujour afficher clés"
 
@@ -4563,7 +4562,9 @@ msgid "TXT_OTHERENGINESG"
 msgstr "La sauvegarde '%s' vient d'un autre moteur basé sur ZDoom :"
 
 msgid "TXT_TOOOLDSG"
-msgstr "La sauvegarde '%s' vient d'une version obsolète : %d. %e est la plus ancienne supportée."
+msgstr ""
+"La sauvegarde '%s' vient d'une version obsolète : %d. %e est la plus "
+"ancienne supportée."
 
 # Shouldn’t this say “%e is the newest supported”?
 #
@@ -4571,7 +4572,9 @@ msgstr "La sauvegarde '%s' vient d'une version obsolète : %d. %e est la plus a
 #
 # Ask Randi: The text is old. I won't change it.
 msgid "TXT_TOONEWSG"
-msgstr "La sauvegarde '%s' vient d'une version plus récente : %d. %e est la plus récente supportée."
+msgstr ""
+"La sauvegarde '%s' vient d'une version plus récente : %d. %e est la plus "
+"récente supportée."
 
 msgid "TXT_NOMAPSG"
 msgstr "La sauvegarde '%s' ne contient pas la carte actuelle."
@@ -5195,10 +5198,14 @@ msgid "ACCMNU_LIGHT_EXTRA"
 msgstr "Illumination Supplémentaire"
 
 msgid "ACCMNU_TOOLTIP_LIGHT_RADIUS"
-msgstr "Contrôle la distance du rayon d'illumination autour du joueur en unités de carte. Les valeurs plus élevées rendent la scène plus claire."
+msgstr ""
+"Contrôle la distance du rayon d'illumination autour du joueur en unités de "
+"carte. Les valeurs plus élevées rendent la scène plus claire."
 
 msgid "ACCMNU_TOOLTIP_LIGHT_EXTRA"
-msgstr "Quantité de lumière secteur ajoutée en plus de la lumière secteur existante, tout en préservant le mode d'illumination existant."
+msgstr ""
+"Quantité de lumière secteur ajoutée en plus de la lumière secteur existante,"
+" tout en préservant le mode d'illumination existant."
 
 msgid "ACCMNU_LIGHT_RADIUS"
 msgstr "Rayon d'Illumination du Joueur"
@@ -5228,34 +5235,52 @@ msgid "DSPLYMNU_IMAGEADJUST"
 msgstr "Calibration de l'Image"
 
 msgid "DSPLYMNU_IMAGEADJUST_TOP1"
-msgstr "À partir d'une distance d'observation normale, ajustez ces paramètres."
+msgstr ""
+"À partir d'une distance d'observation normale, ajustez ces paramètres."
 
 msgid "DSPLYMNU_IMAGEADJUST_TOP2"
-msgstr "La mise à l'échelle et le supersampling peuvent amener à une image incorrectement calibrée."
+msgstr ""
+"La mise à l'échelle et le supersampling peuvent amener à une image "
+"incorrectement calibrée."
 
 msgid "DSPLYMNU_IMAGEADJUST_TOP3"
 msgstr "Veuillez les désactiver avant de calibrer."
 
 msgid "DSPLYMNU_TOOLTIP_GAMMA"
-msgstr "Compense pour les contraintes de votre écran. Ajustez jusqu'à ce que les blocs gris verticaux disparaissent. N'utilisez pas ceci pour rendre le jeu plus clair, seulement pour garantir que l'image est bien calibrée pour votre affichage."
+msgstr ""
+"Compense pour les contraintes de votre écran. Ajustez jusqu'à ce que les "
+"blocs gris verticaux disparaissent. N'utilisez pas ceci pour rendre le jeu "
+"plus clair, seulement pour garantir que l'image est bien calibrée pour votre"
+" affichage."
 
 msgid "DSPLYMNU_BLACKPOINT"
 msgstr "Compensation du point noir"
 
 msgid "DSPLYMNU_TOOLTIP_BLACKPOINT"
-msgstr "Compensation pour les écrans qui n'arrivent pas à afficher les pixels sombres correctement. Ajustez jusqu'à ce que les blocs blancs diagonaux disparaissent. N'utilisez pas ceci pour rendre le jeu plus clair, uniquement pour garantir que l'image est calibré pour votre affichage."
+msgstr ""
+"Compensation pour les écrans qui n'arrivent pas à afficher les pixels "
+"sombres correctement. Ajustez jusqu'à ce que les blocs blancs diagonaux "
+"disparaissent. N'utilisez pas ceci pour rendre le jeu plus clair, uniquement"
+" pour garantir que l'image est calibré pour votre affichage."
 
 msgid "DSPLYMNU_TOOLTIP_IMAGEADJUST_RESET"
-msgstr "Réinitialise toutes les options de ce menu à leurs valeurs par défaut."
+msgstr ""
+"Réinitialise toutes les options de ce menu à leurs valeurs par défaut."
 
 msgid "DSPLYMNU_TOOLTIP_BRIGHTNESS"
-msgstr "Applique un ajustement de luminosité linéaire. Ajustez à votre goût, ou pour voir dans le noir."
+msgstr ""
+"Applique un ajustement de luminosité linéaire. Ajustez à votre goût, ou pour"
+" voir dans le noir."
 
 msgid "DSPLYMNU_TOOLTIP_CONTRAST"
-msgstr "Ajuste la différence perçue entre des couleurs similaires. Contrôle à quel point l'image semble claire ou délavée. Ajustez à votre goût."
+msgstr ""
+"Ajuste la différence perçue entre des couleurs similaires. Contrôle à quel "
+"point l'image semble claire ou délavée. Ajustez à votre goût."
 
 msgid "DSPLYMNU_TOOLTIP_SATURATION"
-msgstr "Ajuste l'intensité des couleurs, rendant l'image plus claire ou délavée. Ajustez à votre goût."
+msgstr ""
+"Ajuste l'intensité des couleurs, rendant l'image plus claire ou délavée. "
+"Ajustez à votre goût."
 
 msgid "DSPLYMNU_IMAGEADJUST_BOTTOM"
 msgstr "Ajustez jusqu'à ce que cela soit d'une couleur Grise uniforme."
@@ -5397,3 +5422,124 @@ msgstr "Seuil de Double-clic"
 
 msgid "ACCMNU_TOOLTIP_DOUBLECLICK_THRESHOLD"
 msgstr "Temps entre deux clics pour activer un évènement double-clic"
+
+msgid "UPDATER_CHECK_FOR_UPDATES"
+msgstr "Vérifier Mises à Jour"
+
+msgid "UPDATER_PROMPT_TO_INSTALL"
+msgstr "Demander pour installer"
+
+msgid "UPDATER_SETTINGS"
+msgstr "Paramètres Mises à Jour"
+
+msgid "UPDATER_INTERVAL"
+msgstr "Vérifier chaque :"
+
+msgid "UPDATER_UPDATE_AVAILABLE"
+msgstr "Nouvelle MàJ Disponible"
+
+msgid "UPDATER_UPDATE_SKIP"
+msgstr "Ignorer MàJ"
+
+msgid "UPDATER_TITLE"
+msgstr "Vérificateur de MàJ"
+
+msgid "UPDATER_DISABLE"
+msgstr "Désactiver Vérificateur de MàJ"
+
+msgid "UPDATER_CHECK_FAILED"
+msgstr "La Vérification de la MàJ a Échoué"
+
+msgid "UPDATER_UPDATE_FAILED"
+msgstr "La MàJ a Échoué"
+
+msgid "UPDATER_YES_PROMPT"
+msgstr "Oui, et demander pour installer les MàJ"
+
+msgid "UPDATER_DISMISS_UPDATE"
+msgstr "Ignorer MàJ ?"
+
+msgid "UPDATER_ASK_AUTO"
+msgstr ""
+"Voulez vous automatiquement vérifier s'il y a des mises à jour ?\n"
+"(Ceci peut être changé plus tard dans l'onglet options)"
+
+msgid "UPDATER_ASK_INTERVAL"
+msgstr ""
+"À quelle fréquence voulez-vous vérifier s'il y a des Mises à Jour ?\n"
+"(Ceci peut être changé plus tard dans l'onglet options)"
+
+msgid "UPDATER_ZIP_FAIL"
+msgstr "Échec de l'ouverture du fichier zip"
+
+msgid "UPDATER_ZIP_ERROR"
+msgstr "Échec de l'ouverture du fichier zip, erreur : '{}' lors de l'écriture du fichier '{}'"
+
+msgid "UPDATER_UPDATING"
+msgstr "Mise à jour..."
+
+msgid "UPDATER_STARTING"
+msgstr "Démarrage du Téléchargement..."
+
+msgid "UPDATER_SUCCESS"
+msgstr "Mise à jour réussie, le lançeur va maintenant redémarrer."
+
+msgid "UPDATER_UP_TO_DATE"
+msgstr "À Jour !"
+
+msgid "UPDATER_CANCELLED"
+msgstr "Mise à jour annulée"
+
+msgid "UPDATER_INVALID_JSON"
+msgstr "JSON de la MàJ Invalide"
+
+msgid "UPDATER_NOT_A_DIR"
+msgstr "'{}' n'est pas un dossier"
+
+msgid "OPTVAL_DISABLE"
+msgstr "Désactiver"
+
+msgid "OPTVAL_NOTIFY"
+msgstr "Notifier"
+
+msgid "OPTVAL_DAILY"
+msgstr "Quotidiennement"
+
+msgid "OPTVAL_WEEKLY"
+msgstr "Hebdomadairement"
+
+msgid "OPTVAL_MONTHLY"
+msgstr "Mensuellement"
+
+msgid "TXT_DOWNLOADING"
+msgstr "Téléchargement"
+
+msgid "TXT_EXPERIMENTAL"
+msgstr "Expérimental"
+
+msgid "TXT_UPDATE"
+msgstr "Mise à Jour"
+
+msgid "TXT_UPDATED"
+msgstr "À Jour"
+
+msgid "TXT_CANCELLED"
+msgstr "Annulé"
+
+msgid "TXT_BACK"
+msgstr "Retour"
+
+msgid "TXT_DISMISS"
+msgstr "Ignorer"
+
+msgid "TXT_SKIP"
+msgstr "Passer"
+
+msgid "TXT_CONFIRM"
+msgstr "Confirmer"
+
+msgid "TXT_OK"
+msgstr "OK"
+
+msgid "CMPTMNU_TRANSFERSECRET"
+msgstr "Le spécial de changement de sol de BOOM transfère les secrets."

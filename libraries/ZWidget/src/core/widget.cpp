@@ -700,6 +700,7 @@ Point Widget::MapToGlobal(const Point& pos) const
 
 void Widget::OnWindowPaint()
 {
+	// TODO: holy shit, this causes so much startup lag. We need a real repaint system
 	Repaint();
 }
 
@@ -921,7 +922,14 @@ void Widget::OnWindowDpiScaleChanged()
 
 bool Widget::OnFileDrop(std::string path)
 {
-	return (FocusWidget && FocusWidget->OnFileDrop(path)) || (ParentObj && ParentObj->OnFileDrop(path));
+	bool res = false;
+	if (!Dropping)
+	{
+		Dropping = true;
+		res = (FocusWidget && FocusWidget->OnFileDrop(path)) || (ParentObj && ParentObj->OnFileDrop(path));
+	}
+	Dropping = false;
+	return res;
 }
 
 double Widget::GetDpiScale() const

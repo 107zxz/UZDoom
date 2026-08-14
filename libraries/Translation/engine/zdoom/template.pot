@@ -4421,9 +4421,6 @@ msgstr ""
 msgid "TCMNU_MIPMAP"
 msgstr ""
 
-msgid "TCMNU_DYNLIGHTS"
-msgstr ""
-
 msgid "AUTOMAPMNU_SHOWKEYS_ALWAYS"
 msgstr ""
 
@@ -5356,4 +5353,13 @@ msgid "TXT_CONFIRM"
 msgstr ""
 
 msgid "TXT_OK"
+msgstr ""
+
+msgid "CMPTMNU_TRANSFERSECRET"
+msgstr ""
+
+msgid "PICKER_THEME"
+msgstr ""
+
+msgid "OPTVAL_LIGHT"
 msgstr ""

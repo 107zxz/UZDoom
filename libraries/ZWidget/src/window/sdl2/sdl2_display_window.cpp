@@ -252,6 +252,7 @@ void SDL2DisplayWindow::SetCursor(StandardCursor cursor)
 
 void SDL2DisplayWindow::Update()
 {
+	if (updating) return;
 	SDL_Event event = {};
 	event.type = PaintEventNumber;
 	event.user.windowID = SDL_GetWindowID(Handle.window);
@@ -690,6 +691,7 @@ void SDL2DisplayWindow::OnMouseMotion(const SDL_MouseMotionEvent& event)
 
 void SDL2DisplayWindow::OnPaintEvent()
 {
+	updating = false;
 	WindowHost->OnWindowPaint();
 }
 

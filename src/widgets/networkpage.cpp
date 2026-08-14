@@ -36,11 +36,12 @@ constexpr double EditHeight = 24.0;
 NetworkPage::NetworkPage(LauncherWindow *launcher, const FStartupSelectionInfo &info)
 	: Widget(nullptr), Launcher(launcher)
 {
-	ParametersEdit         = new LineEdit(this);
-	ParametersLabel        = new TextLabel(this);
-	SaveFileEdit           = new LineEdit(this);
-	SaveFileLabel          = new TextLabel(this);
-	SaveFileCheckbox       = new CheckboxLabel(this);
+	SelectLabel = new TextLabel(this);
+	ParametersEdit = new LineEdit(this);
+	ParametersLabel = new TextLabel(this);
+	SaveFileEdit = new LineEdit(this);
+	SaveFileLabel = new TextLabel(this);
+	SaveFileCheckbox = new CheckboxLabel(this);
 	SaveParametersCheckbox = new CheckboxLabel(this);
 	IWADsDropdown          = new Dropdown(this);
 	PlayerClassLabel       = new TextLabel(this);
@@ -107,32 +108,41 @@ void NetworkPage::OnSetFocus()
 	IWADsDropdown->SetFocus();
 }
 
-void NetworkPage::SetValues(FStartupSelectionInfo &info) const
+bool NetworkPage::OnFileDrop(std::string path)
+{
+	auto text = ParametersEdit->GetText();
+	if (!text.empty()) text += " ";
+	text += "-file \"";
+	text += path;
+	text += "\"";
+	ParametersEdit->SetText(text);
+	return true;
+}
+
+void NetworkPage::SetValues(FStartupSelectionInfo& info) const
 {
 	info.DefaultNetIWAD = IWADsDropdown->GetSelectedItem();
 	info.DefaultNetArgs = ParametersEdit->GetText();
 
 	info.bHosting = IsInHost();
-	if (info.bHosting)
-	{
-		info.DefaultNetPage = 0;
-		HostPage->SetValues(info);
-	}
-	else
-	{
-		info.DefaultNetPage = 1;
-		JoinPage->SetValues(info);
-	}
+	info.DefaultNetPage = info.bHosting ? 0 : 1;
+
+	HostPage->SetValues(info);
+	JoinPage->SetValues(info);
 
 	info.bSaveNetFile = SaveFileCheckbox->GetChecked();
 	info.bSaveNetArgs = SaveParametersCheckbox->GetChecked();
-	const auto save   = SaveFileEdit->GetText();
-	if (!save.empty())
-		info.AdditionalNetArgs.AppendFormat(" -loadgame \"%s\"", save.c_str());
-	const auto pClass = PlayerClassEdit->GetText();
-	if (!pClass.empty())
-		info.AdditionalNetArgs.AppendFormat(" +playerclass \"%s\"", pClass.c_str());
+	const auto save = SaveFileEdit->GetText();
 	info.DefaultNetSaveFile = save;
+
+	if (info.bNetStart)
+	{
+		if (!save.empty())
+			info.AdditionalNetArgs.AppendFormat(" -loadgame \"%s\"", save.c_str());
+		const auto pClass = PlayerClassEdit->GetText();
+		if (!pClass.empty())
+			info.AdditionalNetArgs.AppendFormat(" +playerclass \"%s\"", pClass.c_str());
+	}
 }
 
 void NetworkPage::UpdatePlayButton()
@@ -151,8 +161,11 @@ void NetworkPage::OnGeometryChanged()
 	const double h = GetHeight();
 
 	double y = 0.0;
+	SelectLabel->SetFrameGeometry(0.0, y, w, SelectLabel->GetPreferredHeight());
+	y += SelectLabel->GetPreferredHeight();
+
 	IWADsDropdown->SetFrameGeometry(0.0, y, w, IWADsDropdown->GetPreferredHeight());
-	y += IWADsDropdown->GetPreferredHeight() + 7.0;
+	y += IWADsDropdown->GetPreferredHeight() + 12.0;
 	const double pageTop = y;
 
 	y = h - SaveFileCheckbox->GetPreferredHeight();
@@ -184,6 +197,7 @@ void NetworkPage::OnGeometryChanged()
 
 void NetworkPage::UpdateLanguage()
 {
+	SelectLabel->SetText(GStrings.GetString("PICKER_SELECT"));
 	ParametersLabel->SetText(GStrings.GetString("PICKER_ADDPARM"));
 	SaveFileLabel->SetText(GStrings.GetString("PICKER_LOADSAVE"));
 	SaveFileCheckbox->SetText(GStrings.GetString("PICKER_REMSAVE"));
@@ -252,23 +266,23 @@ HostSubPage::HostSubPage(NetworkPage *main, const FStartupSelectionInfo &info) :
 
 void HostSubPage::SetValues(FStartupSelectionInfo &info) const
 {
-	info.AdditionalNetArgs = "";
+	FString tempArgs = {};
 
 	info.DefaultNetExtraTic = ExtraTicCheckbox->GetChecked();
 	if (info.DefaultNetExtraTic)
-		info.AdditionalNetArgs.AppendFormat(" -extratic");
+		tempArgs.AppendFormat(" -extratic");
 
 	const int dup = TicDupDropdown->GetSelectedItem();
 	if (dup > 0)
-		info.AdditionalNetArgs.AppendFormat(" -dup %d", dup + 1);
+		tempArgs.AppendFormat(" -dup %d", dup + 1);
 	info.DefaultNetTicDup = dup;
 
 	info.DefaultNetPlayers = clamp<int>(MaxPlayersEdit->GetTextInt(), 1, MAXPLAYERS);
-	info.AdditionalNetArgs.AppendFormat(" -host %d", info.DefaultNetPlayers);
+	tempArgs.AppendFormat(" -host %d", info.DefaultNetPlayers);
 	const int port = clamp<int>(PortEdit->GetTextInt(), 0, UINT16_MAX);
 	if (port > 0)
 	{
-		info.AdditionalNetArgs.AppendFormat(" -port %d", port);
+		tempArgs.AppendFormat(" -port %d", port);
 		info.DefaultNetHostPort = port;
 	}
 	else
@@ -281,16 +295,23 @@ void HostSubPage::SetValues(FStartupSelectionInfo &info) const
 	switch (info.DefaultNetGameMode)
 	{
 	case 1:
-		info.AdditionalNetArgs.AppendFormat(" -coop");
+		tempArgs.AppendFormat(" -coop");
 		break;
 	case 3: {
 		info.AdditionalNetArgs.AppendFormat(" +teamplay 1");
 		int team = 255;
 		if (!TeamEdit->GetText().empty())
 		{
-			team = TeamEdit->GetTextInt();
-			if (team < 0 || team > 255)
-				team = 255;
+			tempArgs.AppendFormat(" +teamplay 1");
+			int team = 255;
+			if (!TeamEdit->GetText().empty())
+			{
+				team = TeamEdit->GetTextInt();
+				if (team < 0 || team > 255)
+					team = 255;
+			}
+			tempArgs.AppendFormat(" +team %d", team);
+			info.DefaultNetHostTeam = team;
 		}
 		info.AdditionalNetArgs.AppendFormat(" +team %d", team);
 		info.DefaultNetHostTeam = team;
@@ -298,11 +319,14 @@ void HostSubPage::SetValues(FStartupSelectionInfo &info) const
 	break;
 	case 2:
 		if (AltDeathmatchCheckbox->GetChecked())
-			info.AdditionalNetArgs.AppendFormat(" -altdeath");
+			tempArgs.AppendFormat(" -altdeath");
 		else
-			info.AdditionalNetArgs.AppendFormat(" -deathmatch");
+			tempArgs.AppendFormat(" -deathmatch");
 		break;
 	}
+
+	if (info.bNetStart && info.bHosting)
+		info.AdditionalNetArgs = tempArgs;
 }
 
 void HostSubPage::UpdateLanguage()
@@ -425,16 +449,6 @@ void JoinSubPage::SetValues(FStartupSelectionInfo &info) const
 
 	info.AdditionalNetArgs = "";
 	// info.AdditionalNetArgs.AppendFormat(" -join %s", addr.GetChars());
-
-	int team = 255;
-	if (!TeamEdit->GetText().empty())
-	{
-		team = TeamEdit->GetTextInt();
-		if (team < 0 || team > 255)
-			team = 255;
-	}
-	info.AdditionalNetArgs.AppendFormat(" +team %d", team);
-	info.DefaultNetJoinTeam = team;
 }
 
 void JoinSubPage::UpdateLanguage()
