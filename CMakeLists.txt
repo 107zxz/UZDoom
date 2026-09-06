@@ -255,13 +255,13 @@ find_package( VPX )
 
 # Steamworks
 set(SteamworksSDK_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/libraries/steamworks/public")
-set(SteamworksSDK_LIBRARY "${CMAKE_SOURCE_DIR}/libraries/steamworks/redistributable_bin/linux64/libsteam_api.so")
+set(SteamworksSDK_LIBRARY "${CMAKE_SOURCE_DIR}/libraries/steamworks/redistributable_bin/win64/steam_api64.lib")
 find_package( SteamworksSDK REQUIRED )
-configure_file("${SteamworksSDK_LIBRARY}" "libsteam_api.so" COPYONLY)
+configure_file("${SteamworksSDK_LIBRARY}" "${CMAKE_SOURCE_DIR}/libraries/steamworks/redistributable_bin/win64/steam_api64.dll" COPYONLY)
 configure_file("${CMAKE_SOURCE_DIR}/steam_appid.txt" "steam_appid.txt" COPYONLY)
-install(FILES "libraries/steamworks/redistributable_bin/linux64/libsteam_api.so"
-		DESTINATION ${PROJECT_BINARY_DIR}/AppDir/usr/lib/
-		COMPONENT "Steam API")
+# install(FILES "libraries/steamworks/redistributable_bin/win64/steam_api64.dllo"
+# 		DESTINATION ${PROJECT_BINARY_DIR}/AppDir/usr/lib/
+# 		COMPONENT "Steam API")
 
 
 if (CURL_REQUIRED)
