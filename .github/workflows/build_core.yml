@@ -409,10 +409,10 @@ jobs:
         mv "${pfx}/share/metainfo/org.zdoom.UZDoom.metainfo.xml" "${pfx}/share/metainfo/org.zdoom.UZDoom.appdata.xml"
 
         # cleanup
-        {
-          find "${pfx}" -type f \( -iname \*.a -o -iname \*.h -o -iname \*.cmake \) -print -delete
-          find "${pfx}" -type d -empty -delete -print
-        } | xargs printf 'deleting: %s\n'
+        # {
+        #   find "${pfx}" -type f \( -iname \*.a -o -iname \*.h -o -iname \*.cmake \) -print -delete
+        #   find "${pfx}" -type d -empty -delete -print
+        # } | xargs printf 'deleting: %s\n'
 
         # https://github.com/linuxdeploy/linuxdeploy-plugin-appimage
         export LDAI_UPDATE_INFORMATION="gh-releases-zsync|${OWNER}|${REPO}|${TAG}|Linux-UZDoom-*-${arch}.AppImage.zsync"
@@ -430,22 +430,15 @@ jobs:
 
         function library() { ldconfig -p | grep -F $1 | head -1 | awk '{print $NF}' ; }
 
-        ldd uzdoom
-
-        echo ./linuxdeploy --output appimage \
-          --appdir $appdir \
-          --executable="${pfx}/bin/uzdoom" \
-          --desktop-file="${pfx}/share/applications/org.zdoom.UZDoom.desktop" \
-          --library "$(library libopenal.so.) $(library libsteam_api.so)" \
-          --icon-file="${pfx}/share/icons/hicolor/scalable/apps/org.zdoom.UZDoom.svg"
+        find ${pfx}
 
         chmod +x linuxdeploy
         ./linuxdeploy --output appimage \
           --appdir $appdir \
           --executable="${pfx}/bin/uzdoom" \
           --desktop-file="${pfx}/share/applications/org.zdoom.UZDoom.desktop" \
-          --library "$(library libopenal.so.)" \
-          --library "/__w/UZDoom/UZDoom/build/libsteam_api.so" \
+          --library="$(library libopenal.so.)" \
+          --library="${pfx}/lib/libsteam_api.so" \
           --icon-file="${pfx}/share/icons/hicolor/scalable/apps/org.zdoom.UZDoom.svg"
 
         mv *.AppImage "package/${NAME}.AppImage"

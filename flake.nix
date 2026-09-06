@@ -20,6 +20,8 @@
             python3
             alsa-lib
             linuxdeploy
+
+            act
         ] ++ pkgs.uzdoom.buildInputs;
       };
     }
