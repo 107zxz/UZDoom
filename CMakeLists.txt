@@ -260,7 +260,7 @@ find_package( SteamworksSDK REQUIRED )
 configure_file("${SteamworksSDK_LIBRARY}" "libsteam_api.so" COPYONLY)
 configure_file("${CMAKE_SOURCE_DIR}/steam_appid.txt" "steam_appid.txt" COPYONLY)
 install(FILES "libraries/steamworks/redistributable_bin/linux64/libsteam_api.so"
-		DESTINATION ${PROJECT_BINARY_DIR}
+		DESTINATION ${PROJECT_BINARY_DIR}/AppDir/usr/lib/
 		COMPONENT "Steam API")
 
 
