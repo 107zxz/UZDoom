@@ -269,8 +269,11 @@ int FASETexture::CopyPixels(FBitmap *bmp, int conversion, int frame)
 	// }
 
 	bmp->CopyPixelDataRGB(0, 0, framesData[frame], pixwidth, Height, 4, pixwidth, 0, CF_RGBA);
+
+	// bmp->CopyPixelData(0,0,framesData[frame],pixwidth,Height,4,pixwidth,0)
+
 	// memset(bmp->GetPixels(), 0x0, bmp->GetBufferSize());
-	return 0;
+	return -1;
 }
 
 #include "textures.h"
