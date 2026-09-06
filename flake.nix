@@ -18,6 +18,8 @@
         ];
         buildInputs = with pkgs; [
             python3
+            alsa-lib
+            linuxdeploy
         ] ++ pkgs.uzdoom.buildInputs;
       };
     }
