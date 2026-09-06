@@ -33,6 +33,7 @@
 #include "imagehelpers.h"
 #include "m_png.h"
 #include "m_swap.h"
+#include "miniz.h"
 #include "printf.h"
 #include "texturemanager.h"
 
