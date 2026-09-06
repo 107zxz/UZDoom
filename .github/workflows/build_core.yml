@@ -445,7 +445,7 @@ jobs:
           --executable="${pfx}/bin/uzdoom" \
           --desktop-file="${pfx}/share/applications/org.zdoom.UZDoom.desktop" \
           --library "$(library libopenal.so.)" \
-          --library "/__w/UZDoom/UZDoom/build/libsteam_api.so \
+          --library "/__w/UZDoom/UZDoom/build/libsteam_api.so" \
           --icon-file="${pfx}/share/icons/hicolor/scalable/apps/org.zdoom.UZDoom.svg"
 
         mv *.AppImage "package/${NAME}.AppImage"
