@@ -430,6 +430,15 @@ jobs:
 
         function library() { ldconfig -p | grep -F $1 | head -1 | awk '{print $NF}' ; }
 
+        ldd uzdoom
+
+        echo ./linuxdeploy --output appimage \
+          --appdir $appdir \
+          --executable="${pfx}/bin/uzdoom" \
+          --desktop-file="${pfx}/share/applications/org.zdoom.UZDoom.desktop" \
+          --library "$(library libopenal.so.) $(library libsteam_api.so)" \
+          --icon-file="${pfx}/share/icons/hicolor/scalable/apps/org.zdoom.UZDoom.svg"
+
         chmod +x linuxdeploy
         ./linuxdeploy --output appimage \
           --appdir $appdir \
