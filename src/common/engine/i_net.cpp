@@ -88,7 +88,8 @@ const char *neterror(void);
 #endif
 
 // TODO: Remove noverification after optfile allows properly handling unverified files.
-FARG(noverification, "Multiplayer", "Allows files over netgames to be mismatched; use with caution. Can only be set by the host.", "", "");
+FARG(noverification, "Multiplayer",
+     "Allows files over netgames to be mismatched; use with caution. Can only be set by the host.", "", "");
 FARG(host, "Multiplayer", "Designates the machine as the host for a multiplayer game.", "x",
      "This machine will function as a host for a multiplayer game with x players (including this"
      " machine). It will wait for other machines to connect using the -join. parameter and then"
@@ -100,8 +101,8 @@ FARG(dup, "Multiplayer", "Send less player movement commands over the network.",
      " values range from 1–9. For example, -dup 2 would cause " GAMENAME " to send half as many"
      " movements as normal.");
 FARG(port, "Multiplayer", "Specifies an alternative IP port for a network game.", "x",
-	"Specifies an alternate IP port for this machine to use during a network game. By default,"
-	" port 5029 is used.");
+     "Specifies an alternate IP port for this machine to use during a network game. By default,"
+     " port 5029 is used.");
 
 // As per http://support.microsoft.com/kb/q192599/ the standard
 // size for network buffers is 8k.
@@ -496,10 +497,12 @@ static void SendPacket(uint64_t toSteamID)
 
 	uint8_t *dataStart = &TransmitBuffer[4];
 	uLong    size      = MaxTransmitSize - 5u;
+	assert((NetBufferLength) <= ULONG_MAX);
 	if (NetBufferLength >= MinCompressionSize)
 	{
-		*dataStart    = NetBuffer[0] | NCMD_COMPRESSED;
-		const int res = compress2(dataStart + 1, &size, NetBuffer + 1, NetBufferLength - 1u, 9);
+		*dataStart = NetBuffer[0] | NCMD_COMPRESSED;
+		const int res =
+			compress2(dataStart + 1, &size, NetBuffer + 1, static_cast<unsigned long>(NetBufferLength - 1u), 9);
 		if (res != Z_OK)
 			I_Error("Net compression failed (zlib error %d)", res);
 
@@ -508,7 +511,7 @@ static void SendPacket(uint64_t toSteamID)
 	else
 	{
 		memcpy(dataStart, NetBuffer, NetBufferLength);
-		size = NetBufferLength;
+		size = static_cast<unsigned long>(NetBufferLength);
 	}
 
 	if (size + 4 > MaxTransmitSize)
@@ -789,7 +792,7 @@ void HandleIncomingConnection()
 }
 
 static bool SkipFileVerification = false;
-static bool Host_CheckForConnections(void* connected)
+static bool Host_CheckForConnections(void *connected)
 {
 	const bool forceStarting    = I_ShouldStartNetGame();
 	const bool hasPassword      = strlen(net_password) > 0;
@@ -864,8 +867,8 @@ static bool Host_CheckForConnections(void* connected)
 			{
 				RejectConnection(from, PRE_BANNED);
 			}
-			else if ((error = Net_VerifyEngine(engineInfo, passwordOffset)).Error != FVerificationError::VE_NONE
-					&& (error.Error == FVerificationError::VE_ENGINE || !SkipFileVerification))
+			else if ((error = Net_VerifyEngine(engineInfo, passwordOffset)).Error != FVerificationError::VE_NONE &&
+			         (error.Error == FVerificationError::VE_ENGINE || !SkipFileVerification))
 			{
 				SendVerificationError(from, error);
 			}
@@ -952,7 +955,8 @@ static bool Host_CheckForConnections(void* connected)
 				memcpy(&NetBuffer[3], GameID, 8);
 				NetBufferLength = 11u;
 
-				TArrayView<uint8_t> stream = TArrayView(&NetBuffer[NetBufferLength], MAX_MSGLEN - NetBufferLength);
+				TArrayView<uint8_t> stream =
+					TArrayView(&NetBuffer[NetBufferLength], static_cast<uint32_t>(MAX_MSGLEN - NetBufferLength));
 				Net_SetGameInfo(stream);
 				NetBufferLength += stream.Data() - &NetBuffer[NetBufferLength];
 				SendPacket(con.SteamID);
@@ -978,8 +982,8 @@ static bool Host_CheckForConnections(void* connected)
 							NetBufferLength += addrSize;
 						}
 
-						TArrayView<uint8_t> stream =
-							TArrayView(&NetBuffer[NetBufferLength], MAX_MSGLEN - NetBufferLength);
+						TArrayView<uint8_t> stream = TArrayView(&NetBuffer[NetBufferLength],
+						                                        static_cast<uint32_t>(MAX_MSGLEN - NetBufferLength));
 						Net_SetUserInfo(i, stream);
 						NetBufferLength += stream.Data() - &NetBuffer[NetBufferLength];
 						SendPacket(con.SteamID);
@@ -1063,7 +1067,7 @@ static bool HostGame(int arg)
 	// TODO: This is a really bad solution, but this will be getting removed after -optfile
 	// can properly handle unverified files, so it will do for now.
 	SkipFileVerification = Args->CheckParm(FArg_noverification);
-	if (!I_NetLoop(Host_CheckForConnections, (void*)&connectedPlayers))
+	if (!I_NetLoop(Host_CheckForConnections, (void *)&connectedPlayers))
 	{
 		SendAbort();
 		throw CExitEvent(0);
@@ -1108,7 +1112,7 @@ static FString ReadVerificationError(TArrayView<uint8_t> stream)
 	}
 
 	TMap<FString, FString> files = {};
-	for (size_t i = 0u; i < fileSystem.GetNumWads(); ++i)
+	for (int i = 0; i < fileSystem.GetNumWads(); ++i)
 	{
 		if (!fileSystem.IsOptionalResource(i))
 		{
@@ -1288,7 +1292,7 @@ static bool Guest_ContactHost(void *unused)
 				{
 					Connected[c].Status = CSTAT_READY;
 				}
-				TArrayView<uint8_t> stream = TArrayView(&NetBuffer[byte], MAX_MSGLEN - byte);
+				TArrayView<uint8_t> stream = TArrayView(&NetBuffer[byte], static_cast<unsigned>(MAX_MSGLEN - byte));
 				Net_ReadUserInfo(c, stream);
 				SetClientAck(consoleplayer, c, true);
 
@@ -1328,7 +1332,8 @@ static bool Guest_ContactHost(void *unused)
 			NetBuffer[1]    = PRE_USER_INFO;
 			NetBufferLength = 2u;
 
-			TArrayView<uint8_t> stream = TArrayView(&NetBuffer[NetBufferLength], MAX_MSGLEN - NetBufferLength);
+			TArrayView<uint8_t> stream =
+				TArrayView(&NetBuffer[NetBufferLength], static_cast<unsigned>(MAX_MSGLEN - NetBufferLength));
 			Net_SetUserInfo(consoleplayer, stream);
 			NetBufferLength += stream.Data() - &NetBuffer[NetBufferLength];
 			SendPacket(Connected[0].SteamID);
@@ -1400,7 +1405,7 @@ bool I_InitNetwork()
 		Printf("Using alternate port %d\n", GamePort);
 	}
 
-	//net_password = Args->CheckValue(FArg_password);
+	// net_password = Args->CheckValue(FArg_password);
 
 	// parse network game options,
 	//		player 1: -host <numplayers>

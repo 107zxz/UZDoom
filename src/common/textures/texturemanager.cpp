@@ -253,7 +253,9 @@ FTextureID FTextureManager::CheckForTexture(const char *name, ETextureType usety
 				if (flags & TEXMAN_DontCreate)
 					return FTextureID(
 						-1); // we only want to check, there's no need to create a texture if we don't have one yet.
-				tex = MakeGameTexture(CreateTextureFromLump(lump), nullptr, ETextureType::Override);
+				tex = MakeGameTexture(CreateTextureFromLump(lump), name, ETextureType::Override);
+				if (strchr(name, '/'))
+					tex->setFullNameTexture();
 				if (tex != NULL)
 				{
 					tex->AddAutoMaterials();
@@ -1102,7 +1104,7 @@ void FTextureManager::ExpandAseTextures(int wadnum)
 		auto name = fileSystem.GetFileFullName(i);
 
 		if (strcmp(name + (strlen(name) - 4), ".ase") != 0)
-		  continue;
+			continue;
 
 		// Get existing texture and start doing some EVIL!
 

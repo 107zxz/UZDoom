@@ -93,7 +93,7 @@ void HWDrawInfo::DrawPSprite(HUDSprite *huds, FRenderState &state)
 		state.AlphaFunc(Alpha_GEqual, thresh);
 		FTranslationID trans = huds->weapon->GetTranslation();
 		if ((huds->weapon->Flags & PSPF_PLAYERTRANSLATED)) trans = huds->owner->Translation;
-		state.SetMaterial(huds->texture, UF_Sprite, CTF_Expand, CLAMP_XY_NOMIP, trans, huds->OverrideShader);
+		state.SetMaterial(huds->texture, UF_Sprite, CTF_Expand, CLAMP_XY_NOMIP, trans, huds->OverrideShader, nullptr);
 		state.Draw(DT_TriangleStrip, huds->mx, 4);
 	}
 
@@ -808,6 +808,8 @@ void HWDrawInfo::PreparePlayerSprites3D(sector_t * viewsector, area_t in_area)
 		hudsprite.mframe = smf;
 		hudsprite.weapon = psp;
 
+		int smf_flags = hudsprite.mframe->getFlags(psp->Caller->modelData);
+
 		if(ModifyBobLayer3D && (psp->Flags & PSPF_ADDBOB))
 		{
 			DVector3 t, r;
@@ -845,8 +847,15 @@ void HWDrawInfo::PreparePlayerSprites3D(sector_t * viewsector, area_t in_area)
 		// set the lighting parameters
 		if (hudsprite.RenderStyle.BlendOp != STYLEOP_Shadow && Level->HasDynamicLights && !isFullbrightScene() && gl_light_sprites && !(playermo->renderflags2 & RF2_NODYNAMICLIGHTING))
 		{
-			hw_GetDynModelLight(playermo, lightdata);
-			hudsprite.lightindex = screen->mLights->UploadLights(lightdata);
+			if (!(smf_flags & MDL_NOPERPIXELLIGHTING))
+			{
+				hw_GetDynModelLight(playermo, lightdata);
+				hudsprite.lightindex = screen->mLights->UploadLights(lightdata);
+			}
+			else
+			{
+				GetDynSpriteLight(playermo, nullptr, hudsprite.dynrgb);
+			}
 			LightProbe* probe = FindLightProbe(playermo->Level, playermo->X(), playermo->Y(), playermo->Center());
 			if (probe)
 			{

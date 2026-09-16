@@ -21,6 +21,7 @@
 #include <zwidget/widgets/textlabel/textlabel.h>
 
 #include "basics.h"
+#include "c_console.h"
 #include "gstrings.h"
 #include "netstartwindow.h"
 #include "version.h"
@@ -102,7 +103,7 @@ void NetStartWindow::NetProgress(int cur, int limit)
 
 	Instance->maxpos = limit;
 	Instance->SetProgress(cur);
-	for (int start = Instance->LobbyWindow->GetItemAmount(); start < Instance->maxpos; ++start)
+	for (size_t start = Instance->LobbyWindow->GetItemAmount(); start < Instance->maxpos; ++start)
 		Instance->LobbyWindow->AddItem(std::to_string(start));
 }
 
@@ -312,8 +313,10 @@ void NetStartWindow::OnGeometryChanged()
 
 void NetStartWindow::OnCallbackTimerExpired()
 {
+	static auto t = 0u;
 	if (timer_callback)
 	{
+		if (t++%60 == 5) DEBUG_LOG("%s", "tick");
 		bool result = false;
 		try
 		{
