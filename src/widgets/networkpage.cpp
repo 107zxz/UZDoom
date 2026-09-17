@@ -36,12 +36,12 @@ constexpr double EditHeight = 24.0;
 NetworkPage::NetworkPage(LauncherWindow *launcher, const FStartupSelectionInfo &info)
 	: Widget(nullptr), Launcher(launcher)
 {
-	SelectLabel = new TextLabel(this);
-	ParametersEdit = new LineEdit(this);
-	ParametersLabel = new TextLabel(this);
-	SaveFileEdit = new LineEdit(this);
-	SaveFileLabel = new TextLabel(this);
-	SaveFileCheckbox = new CheckboxLabel(this);
+	SelectLabel            = new TextLabel(this);
+	ParametersEdit         = new LineEdit(this);
+	ParametersLabel        = new TextLabel(this);
+	SaveFileEdit           = new LineEdit(this);
+	SaveFileLabel          = new TextLabel(this);
+	SaveFileCheckbox       = new CheckboxLabel(this);
 	SaveParametersCheckbox = new CheckboxLabel(this);
 	IWADsDropdown          = new Dropdown(this);
 	PlayerClassLabel       = new TextLabel(this);
@@ -111,10 +111,11 @@ void NetworkPage::OnSetFocus()
 bool NetworkPage::OnFileDrop(std::string path)
 {
 	auto text = ParametersEdit->GetText();
-	if (!text.empty()) text += " ";
+	if (!text.empty())
+		text += " ";
 
 	std::string arg;
-	auto ext = path.substr(path.length() - 4u);
+	auto        ext = path.substr(path.length() - 4u);
 	if (!stricmp(ext.c_str(), ".deh"))
 		arg = "-deh";
 	else if (!stricmp(ext.c_str(), ".bex"))
@@ -130,20 +131,20 @@ bool NetworkPage::OnFileDrop(std::string path)
 	return true;
 }
 
-void NetworkPage::SetValues(FStartupSelectionInfo& info) const
+void NetworkPage::SetValues(FStartupSelectionInfo &info) const
 {
 	info.DefaultNetIWAD = IWADsDropdown->GetSelectedItem();
 	info.DefaultNetArgs = ParametersEdit->GetText();
 
-	info.bHosting = IsInHost();
+	info.bHosting       = IsInHost();
 	info.DefaultNetPage = info.bHosting ? 0 : 1;
 
 	HostPage->SetValues(info);
 	JoinPage->SetValues(info);
 
-	info.bSaveNetFile = SaveFileCheckbox->GetChecked();
-	info.bSaveNetArgs = SaveParametersCheckbox->GetChecked();
-	const auto save = SaveFileEdit->GetText();
+	info.bSaveNetFile       = SaveFileCheckbox->GetChecked();
+	info.bSaveNetArgs       = SaveParametersCheckbox->GetChecked();
+	const auto save         = SaveFileEdit->GetText();
 	info.DefaultNetSaveFile = save;
 
 	if (info.bNetStart)
@@ -458,8 +459,14 @@ void JoinSubPage::SetValues(FStartupSelectionInfo &info) const
 	// 	info.DefaultNetJoinPort = 0;
 	// }
 
-	info.AdditionalNetArgs = "";
+	// info.AdditionalNetArgs = "";
 	// info.AdditionalNetArgs.AppendFormat(" -join %s", addr.GetChars());
+
+	CSteamID lobbyID = SteamMatchmaking()->GetLobbyByIndex(LobbyList->GetSelectedItem());
+
+	const char *ownerID = SteamMatchmaking()->GetLobbyData(lobbyID, "owner_id");
+
+	info.AdditionalNetArgs.AppendFormat(" -join %s", ownerID);
 }
 
 void JoinSubPage::UpdateLanguage()
@@ -518,6 +525,7 @@ void JoinSubPage::OnGeometryChanged()
 
 void JoinSubPage::OnLobbySearch(LobbyMatchList_t *cb)
 {
+	// TODO: Save this info somewhere and pull the steam ID when I try to join
 
 	int l = LobbyList->GetItemAmount();
 	for (int i = 0; i < l; i++)

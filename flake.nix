@@ -19,6 +19,7 @@
         buildInputs = with pkgs; [
             python3
             alsa-lib
+            openal
             linuxdeploy
 
             act

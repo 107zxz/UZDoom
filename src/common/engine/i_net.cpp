@@ -531,8 +531,8 @@ static void SendPacket(uint64_t toSteamID)
 
 	// TransmitBuffer[size + 4] = '\0';
 
-	// TArray<uint8_t> b64 = base64_encode(TransmitBuffer, size + 4);
-	// Printf("Sending packet with contents \"%s\" to steam id %llu\n", (const char *)b64.Data(), toSteamID);
+	TArray<uint8_t> b64 = base64_encode(TransmitBuffer, size + 4);
+	Printf("Sending packet with contents \"%s\" to steam id %lu\n", (const char *)b64.Data(), toSteamID);
 
 	SteamNetworking()->SendP2PPacket(t, TransmitBuffer, size + 4, k_EP2PSendUnreliable);
 	// sendto(MySocket, (const char *)TransmitBuffer, size + 4, 0, (const sockaddr *)&to, sizeof(to));
@@ -1548,8 +1548,11 @@ CallbackHandler handler;
 
 void CallbackHandler::OnLobbyCreated(LobbyCreated_t *cb)
 {
+	char ownerID[32];
+	snprintf(ownerID, 32, "%lu", SteamUser()->GetSteamID().ConvertToUint64());
 	Printf("Started a steam lobby with id: %lld\n", cb->m_ulSteamIDLobby);
 	SteamMatchmaking()->SetLobbyData(cb->m_ulSteamIDLobby, "amydoomowner", SteamFriends()->GetPersonaName());
+	SteamMatchmaking()->SetLobbyData(cb->m_ulSteamIDLobby, "owner_id", ownerID);
 }
 
 void CallbackHandler::OnP2PSessionRequest(P2PSessionRequest_t *cb)
