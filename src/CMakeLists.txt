@@ -12,7 +12,6 @@ include( CheckCXXCompilerFlag )
 include( CheckIncludeFile )
 include( CheckIncludeFiles )
 include( CheckLibraryExists )
-include( FindPkgConfig )
 
 if( DEM_CMAKE_COMPILER_IS_GNUCXX_COMPATIBLE )
 	option( NO_STRIP "Do not strip Release or MinSizeRel builds" )
@@ -301,8 +300,12 @@ if (HAVE_VULKAN)
 	list( APPEND PROJECT_LIBRARIES "zvulkan" )
 endif()
 
+add_subdirectory("common/thirdparty/freetype-2.13.3")
+add_subdirectory("common/thirdparty/harfbuzz-7.3.0")
+add_subdirectory("utility/trex")
+list( APPEND PROJECT_LIBRARIES "trex" )
 list( APPEND PROJECT_LIBRARIES "zwidget" )
-list( APPEND PROJECT_LIBRARIES "webp" )
+list( APPEND PROJECT_LIBRARIES "${WEBP_TARGET}" )
 
 message("Building for target architecture: ${TARGET_ARCHITECTURE}")
 
@@ -346,7 +349,7 @@ else()
 	message( SEND_ERROR "Could not find libvpx" )
 endif()
 
-include_directories( SYSTEM "${BZIP2_INCLUDE_DIR}" "${LZMA_INCLUDE_DIR}" "${ZMUSIC_INCLUDE_DIR}")
+include_directories( SYSTEM "${BZIP2_INCLUDE_DIR}" "${LZMA_INCLUDE_DIR}" "${ZMUSIC_INCLUDE_DIR}" "${BOOST_PFR_INCLUDE_DIR}" "${REFLECT_INCLUDE_DIR}")
 
 if( ${HAVE_VM_JIT} )
 	add_definitions( -DHAVE_VM_JIT )
@@ -565,6 +568,7 @@ file( GLOB HEADER_FILES
 	common/thirdparty/utf8proc/*.h
 	common/rendering/*.h
 	common/rendering/gl_load/*.h
+	common/rendering/gl/*.h
 	common/rendering/gles/*.h
 	common/rendering/hwrenderer/data/*.h
 	common/rendering/vulkan/*.h
@@ -1119,6 +1123,7 @@ set (PCH_SOURCES
 	common/menu/messagebox.cpp
 	common/menu/optionmenu.cpp
 	common/menu/resolutionmenu.cpp
+	common/menu/advancedfontmenu.cpp
 	common/menu/menudef.cpp
 	common/menu/savegamemanager.cpp
 	common/statusbar/base_sbar.cpp
@@ -1210,6 +1215,7 @@ set (PCH_SOURCES
 	utility/nodebuilder/nodebuild_gl.cpp
 	utility/nodebuilder/nodebuild_utility.cpp
 	utility/system_theme.cpp
+	utility/simdutf/simdutf.cpp
 )
 
 if( ZMUSIC_SYSTEM_INSTALL OR NOT DEFINED BUILD_SHARED_LIBS OR BUILD_SHARED_LIBS)
@@ -1274,7 +1280,6 @@ set( GAME_SOURCES
 	common/filesystem/source/fs_stringpool.cpp
 	common/filesystem/source/unicode.cpp
 	common/filesystem/source/critsec.cpp
-
 )
 
 set( GAME_NONPCH_SOURCES ${GAME_SOURCES} )
@@ -1386,13 +1391,13 @@ include_directories(
 	xlat
 	utility
 	utility/nodebuilder
+	utility/simdutf
 	scripting
 	scripting/zscript
 	rendering
 	launcher
 	../libraries/ZVulkan/include
 	../libraries/ZWidget/include
-	../libraries/webp/include
 	../libraries/range_map/include
 	${SYSTEM_SOURCES_DIR}
 )
@@ -1450,20 +1455,13 @@ else()
 endif()
 
 add_custom_command(TARGET zdoom POST_BUILD
-	COMMAND ${CMAKE_COMMAND} -E make_directory "${ZDOOM_RESOURCE_DIR}/soundfonts"
-	COMMAND ${CMAKE_COMMAND} -E make_directory "${ZDOOM_RESOURCE_DIR}/fm_banks"
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+		"${CMAKE_SOURCE_DIR}/soundfont"
+		"${ZDOOM_RESOURCE_DIR}/soundfonts"
 
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different
-		"${CMAKE_SOURCE_DIR}/soundfont/uzdoom.sf2"
-		"${ZDOOM_RESOURCE_DIR}/soundfonts/uzdoom.sf2"
-
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different
-		"${CMAKE_SOURCE_DIR}/fm_banks/GENMIDI.GS.wopl"
-		"${ZDOOM_RESOURCE_DIR}/fm_banks/GENMIDI.GS.wopl"
-
-	COMMAND ${CMAKE_COMMAND} -E copy_if_different
-		"${CMAKE_SOURCE_DIR}/fm_banks/gs-by-papiezak-and-sneakernets.wopn"
-		"${ZDOOM_RESOURCE_DIR}/fm_banks/gs-by-papiezak-and-sneakernets.wopn"
+	COMMAND ${CMAKE_COMMAND} -E copy_directory
+		"${CMAKE_SOURCE_DIR}/fm_banks"
+		"${ZDOOM_RESOURCE_DIR}/fm_banks"
 
 	VERBATIM
 )

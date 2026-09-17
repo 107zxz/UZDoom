@@ -64,6 +64,7 @@ EXTERN_CVAR(Bool, r_debug_disable_vis_filter)
 EXTERN_CVAR(Float, transsouls)
 EXTERN_CVAR(Float, r_actorspriteshadowalpha)
 EXTERN_CVAR(Float, r_actorspriteshadowfadeheight)
+EXTERN_CVAR(Int, r_distance_cull_type)
 
 //==========================================================================
 //
@@ -200,7 +201,7 @@ void HWSprite::DrawSprite(HWDrawInfo *di, FRenderState &state, bool translucent)
 		if (!modelframe)
 		{
 			// non-black fog with subtractive style needs special treatment
-			if (!Colormap.FadeColor.isBlack())
+			if (!Colormap.FadeColor.isBlack() || r_distance_cull_type > 1)
 			{
 				foglayer = true;
 				// Due to the two-layer approach we need to force an alpha test that lets everything pass
@@ -225,7 +226,7 @@ void HWSprite::DrawSprite(HWDrawInfo *di, FRenderState &state, bool translucent)
 	}
 
 	uint32_t spritetype = actor? uint32_t(actor->renderflags & RF_SPRITETYPEMASK) : 0;
-	if (texture) state.SetMaterial(texture, UF_Sprite, (spritetype == RF_FACESPRITE) ? CTF_Expand : 0, clampmode, translation, OverrideShader);
+	if (texture) state.SetMaterial(texture, UF_Sprite, (spritetype == RF_FACESPRITE) ? CTF_Expand : 0, clampmode, translation, OverrideShader, actor ? actor->GetClass() : nullptr);
 	else if (!modelframe) state.EnableTexture(false);
 
 	//SetColor(lightlevel, rel, Colormap, trans);
@@ -409,9 +410,8 @@ bool HWSprite::CalculateVertices(HWDrawInfo* di, FVector3* v, DVector3* vp)
 	const bool AngledRoll = (actor != nullptr && actor->renderflags2 & RF2_ANGLEDROLL);
 
 	// [BB] Billboard stuff
-	const bool drawWithXYBillboard = ((particle && gl_billboard_particles && !(particle->flags & SPF_NO_XY_BILLBOARD)) || (!(actor && actor->renderflags & RF_FORCEYBILLBOARD)
-		//&& di->mViewActor != nullptr
-		&& (gl_billboard_mode == 1 || (actor && actor->renderflags & RF_FORCEXYBILLBOARD)))) && !AngledRoll;
+	const bool drawWithXYBillboard = ((particle && (gl_billboard_particles || gl_billboard_mode == 1) && !(particle->flags & SPF_NO_XY_BILLBOARD))
+		|| (actor && !(actor->renderflags & RF_FORCEYBILLBOARD) && (gl_billboard_mode == 1 || actor->renderflags & RF_FORCEXYBILLBOARD))) && !AngledRoll;
 
 	bool drawBillboardFacingCamera = gl_billboard_faces_camera;
 	if (!hw_force_cambbpref)

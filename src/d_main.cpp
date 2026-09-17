@@ -756,8 +756,8 @@ CVAR(Flag, sv_nocountendmonst, dmflags2, DF2_NOCOUNTENDMONST);
 CVAR(Flag, sv_respawnsuper, dmflags2, DF2_RESPAWN_SUPER);
 CVAR(Flag, sv_nothingspawn, dmflags2, DF2_NO_COOP_THING_SPAWN);
 CVAR(Flag, sv_alwaysspawnmulti, dmflags2, DF2_ALWAYS_SPAWN_MULTI);
-CVAR(Flag, sv_novertspread, dmflags2, DF2_NOVERTSPREAD);
 CVAR(Flag, sv_noextraammo, dmflags2, DF2_NO_EXTRA_AMMO);
+DEPR_CVAR(Flag, sv_novertspread, dmflags2, "Engine feature removed in favour of modding");
 
 //==========================================================================
 //
@@ -937,6 +937,8 @@ CVAR(Bool, vid_activeinbackground, false, CVAR_ARCHIVE | CVAR_GLOBALCONFIG)
 
 EXTERN_CVAR(Bool, r_drawvoxels)
 EXTERN_CVAR(Int, gl_tonemap)
+EXTERN_CVAR(Bool, am_match_statusbar)
+
 static uint32_t GetCaps()
 {
 	ActorRenderFeatureFlags FlagSet;
@@ -1082,8 +1084,16 @@ static void DrawRateStuff()
 
 static void DrawOverlays()
 {
-	C_DrawConsole();
-	M_Drawer();
+	if (menuactive == MENU_GameplayMenu)
+	{ // draw console above gameplay menus
+		M_Drawer();
+		C_DrawConsole();
+	}
+	else
+	{
+		C_DrawConsole();
+		M_Drawer();
+	}
 	DrawRateStuff();
 	if (!hud_toggled)
 		FStat::PrintStat(twod);
@@ -1095,6 +1105,133 @@ static void End2DAndUpdate()
 	CheckBench();
 	screen->Update();
 	twod->OnFrameDone();
+}
+
+class GraphBuffer
+{
+	TArray<float> buffer;
+	int           index = 0;
+
+  public:
+	inline GraphBuffer(int size) : buffer(size, true)
+	{
+		assert(size > 0);
+	}
+
+	inline void Push(float val)
+	{
+		buffer[index] = val;
+		index         = (index + 1) % buffer.size();
+	}
+
+	inline const TArray<float> &GetData() const
+	{
+		return buffer;
+	}
+
+	inline int GetStartIndex() const
+	{
+		return index;
+	}
+};
+
+GraphBuffer renderTimeGraph(256);
+
+void RenderGraph(F2DDrawer *drawer, const GraphBuffer &buffer, DVector2 pos, DVector2 size, float yMax, uint32_t color,
+                 uint8_t alpha, const char *guideFormatStr)
+{
+	drawer->AddThickLine(DVector2(pos.X, pos.Y + size.Y / 2), DVector2(pos.X + size.X, pos.Y + size.Y / 2), size.Y,
+	                     MAKEARGB(255, 0, 0, 0), alpha / 2);
+
+	FFont *font = ConFont;
+
+	FString str;
+
+	auto addGuideLine = [&](double y, double val) {
+		drawer->AddLine(DVector2(pos.X, pos.Y + y), DVector2(pos.X + size.X, pos.Y + y), nullptr,
+		                MAKEARGB(255, 255, 255, 255), alpha / 2);
+		str.Format(guideFormatStr, val);
+		DrawText(drawer, font, 0, pos.X + size.X, pos.Y + y - 4.0, str.GetChars(), 0);
+	};
+
+	for (int i = 1; i < 10; ++i)
+	{
+		addGuideLine(size.Y * double(i) / 10.0, double((10 - i) / 10.0f * yMax));
+	}
+
+	auto &data  = buffer.GetData();
+	auto  stepX = size.X / data.size();
+
+	auto calcYPos = [&](float y) { return pos.Y + size.Y * (1.0f - (y / yMax)); };
+
+	int startIndex = buffer.GetStartIndex();
+
+	DVector2 prev = DVector2(pos.X, calcYPos(data[startIndex]));
+
+	for (int i = 1; i < data.size(); ++i)
+	{
+		pos.X += stepX;
+		DVector2 next = DVector2(pos.X, calcYPos(data[(startIndex + i) % data.size()]));
+
+		drawer->AddLine(prev, next, nullptr, color, alpha);
+		prev = next;
+	}
+}
+
+int rendergraph_count = 0;
+
+ADD_RAWSTAT_ONOFF(rendergraph)
+{
+	int    textScale = active_con_scale(drawer);
+	double width     = (drawer->GetWidth() * 0.25) / textScale;
+	double height    = (drawer->GetHeight() * 0.25) / textScale;
+	renderTimeGraph.Push(All.TimeMS() + Finish.TimeMS());
+	RenderGraph(drawer, renderTimeGraph, DVector2(0, yoffset_bottom - height), // pos
+	            DVector2(width, height),                                       // size
+	            20.0f,                                                         // ymax
+	            MAKEARGB(255, 255, 255, 0),                                    // color
+	            255,                                                           // alpha
+	            "%.1lfms");                                                    // guideFormatStr
+	return height;
+}
+
+STAT_ON(rendergraph)
+{
+	doBench++;
+	rendergraph_count++;
+}
+
+STAT_OFF(rendergraph)
+{
+	doBench--;
+	rendergraph_count--;
+}
+
+ADD_RAWSTAT_ONOFF(rendergraph_center)
+{
+	if (rendergraph_count < 2)
+	{
+		renderTimeGraph.Push(All.TimeMS() + Finish.TimeMS());
+	}
+	RenderGraph(drawer, renderTimeGraph, DVector2(drawer->GetWidth() * 0.25, drawer->GetHeight() * 0.25), // pos
+	            DVector2(drawer->GetWidth() * 0.5, drawer->GetHeight() * 0.5),                            // size
+	            20.0f,                                                                                    // ymax
+	            MAKEARGB(255, 255, 255, 0),                                                               // color
+	            255,                                                                                      // alpha
+	            "%.1lfms"); // guideFormatStr
+	return 0;
+}
+
+STAT_ON(rendergraph_center)
+{
+	doBench++;
+	rendergraph_count++;
+}
+
+STAT_OFF(rendergraph_center)
+{
+	doBench--;
+	rendergraph_count--;
 }
 
 //==========================================================================
@@ -1230,10 +1367,17 @@ void D_Display()
 		if (!hud_toggled)
 		{
 			V_DrawBlend(viewsec);
+
 			if (automapactive)
 			{
-				primaryLevel->automap->Drawer(
-					(hud_althud && viewheight == SCREENHEIGHT) ? viewheight : StatusBar->GetTopOfStatusbar());
+				if (viewheight == SCREENHEIGHT && (hud_althud || am_match_statusbar))
+				{
+					primaryLevel->automap->Drawer(viewheight);
+				}
+				else
+				{
+					primaryLevel->automap->Drawer(StatusBar->GetTopOfStatusbar());
+				}
 			}
 
 			// for timing the statusbar code.
@@ -1256,7 +1400,8 @@ void D_Display()
 				StatusBar->CallDraw(HUD_AltHud, vp.TicFrac);
 				StatusBar->DrawTopStuff(HUD_AltHud);
 			}
-			else if (viewheight == SCREENHEIGHT && viewactive && screenblocks > 10)
+			else if (viewheight == SCREENHEIGHT && (viewactive || (am_match_statusbar && automapactive)) &&
+			         screenblocks > 10)
 			{
 				EHudState state = DrawFSHUD ? HUD_Fullscreen : HUD_None;
 				StatusBar->DrawBottomStuff(state);
@@ -1344,7 +1489,7 @@ void D_Display()
 				}
 				if (paused && multiplayer)
 				{
-					FFont  *font      = generic_ui ? NewSmallFont : SmallFont;
+					FFont  *font      = FFont::GetSmallTextFont(generic_ui ? NewSmallFont : SmallFont);
 					FString plrString = GStrings.GetString("TXT_BY");
 					plrString.Substitute("%s", players[paused - 1].userinfo.GetName());
 					TArray<FBrokenLines> txtbyLines = V_BreakLines(font, maxWidth, plrString);
@@ -1534,7 +1679,7 @@ void D_PageDrawer(void)
 	}
 	if (Subtitle != nullptr)
 	{
-		FFont *font = generic_ui ? NewSmallFont : SmallFont;
+		FFont *font = FFont::GetSmallTextFont(generic_ui ? NewSmallFont : SmallFont);
 		DrawFullscreenSubtitle(font, Subtitle);
 	}
 	if (Advisory.isValid())
@@ -2957,7 +3102,7 @@ bool System_WantGuiCapture()
 {
 	bool wantCapt;
 
-	if (menuactive == MENU_Off)
+	if (menuactive == MENU_Off || menuactive == MENU_GameplayMenu)
 	{
 		wantCapt = ConsoleState == c_down || ConsoleState == c_falling || chatmodeon;
 	}
@@ -2982,8 +3127,10 @@ static bool System_DispatchEvent(event_t *ev)
 {
 	shiftState.AddEvent(ev);
 
-	if (ev->type == EV_Mouse && menuactive == MENU_Off && ConsoleState != c_down && ConsoleState != c_falling &&
-	    !primaryLevel->localEventManager->Responder(ev) && !paused)
+	if (ev->type == EV_Mouse &&
+	    (menuactive == MENU_Off || (menuactive == MENU_GameplayMenu && CurrentMenu && !CurrentMenu->mMouseCapture)) &&
+	    ConsoleState != c_down && ConsoleState != c_falling && !primaryLevel->localEventManager->Responder(ev) &&
+	    !paused)
 	{
 		if (buttonMap.ButtonDown(Button_Mlook) || freelook)
 		{
@@ -3118,6 +3265,7 @@ void System_LanguageChanged(const char *lang)
 		if (Level->info != nullptr)
 			Level->LevelName = Level->info->LookupLevelName();
 	}
+
 	I_UpdateWindowTitle();
 }
 
@@ -4103,8 +4251,10 @@ static int D_DoomMain_Internal(void)
 
 		std::vector<FileSys::ResourceName> allwads;
 
-		const FIWADInfo *iwad_info = iwad_man->FindIWAD(allwads, iwad.GetChars(), basewad.GetChars(), optionalwad.GetChars());
-		if (!iwad_info) return 0;	// user exited the selection popup via cancel button.
+		const FIWADInfo *iwad_info =
+			iwad_man->FindIWAD(allwads, iwad.GetChars(), basewad.GetChars(), optionalwad.GetChars());
+		if (!iwad_info)
+			return 0; // user exited the selection popup via cancel button.
 
 		GetCmdLineFiles(pwads, false); // [RL0] Update with files passed on the launcher extra args
 		// For now these need to remain verifiable over the network.
@@ -4214,10 +4364,10 @@ void SignalHandler(int signal)
 int GameMain()
 {
 	// Steam init
-	//if (SteamAPI_RestartAppIfNecessary(480))
+	// if (SteamAPI_RestartAppIfNecessary(480))
 	//	exit(1);
 
-	//if (SteamAPI_Init())
+	// if (SteamAPI_Init())
 	//	SteamNetworkingUtils()->InitRelayNetworkAccess();
 
 	// On Windows, prefer the native win32 backend.
@@ -4484,4 +4634,37 @@ CCMD(type)
 		auto data = fileSystem.ReadFile(lump);
 		Printf("%.*s\n", static_cast<int>(data.size()), data.string());
 	}
+}
+
+void PrintVRAM_ATI(FString &out);
+void PrintVRAM_NV(FString &out);
+// void PrintVRAM_VK(FString &out);
+ADD_STAT(vram)
+{
+	// TODO also grab total AMD gpu memory on windows with WGL_AMD_gpu_association
+	// (https://registry.khronos.org/OpenGL/extensions/AMD/WGL_AMD_gpu_association.txt /
+	// https://registry.khronos.org/OpenGL/extensions/MESA/GLX_MESA_query_renderer.txt) (because of
+	// GL_NVX_gpu_memory_info, nvidia on windows and linux in general (mesa implements the extension for all GPUs)
+	// doesn't need it since it returns total memory as well, not just free memory)
+
+	FString out = "";
+	if (screen->HasNVidiaVRAMExt())
+	{
+		PrintVRAM_NV(out);
+	}
+	else if (screen->HasATIVRAMExt())
+	{
+		PrintVRAM_ATI(out);
+	}
+#if 0
+	else if(screen->HasVulkanVRAMExt())
+	{
+		PrintVRAM_VK(out); // TODO implement for vulkan
+	}
+#endif
+	else
+	{
+		out = "No VRAM info available for current GPU";
+	}
+	return out;
 }

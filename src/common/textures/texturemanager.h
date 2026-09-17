@@ -100,6 +100,12 @@ class FTextureManager
 		return InternalGetTexture(i, animate);
 	}
 
+	inline FGameTexture *GetPlaceholderTexture() const
+	{ // faster version of GameByIndex(1)
+		assert(Textures.Size() >= 2);
+		return Textures[1].Texture;
+	}
+
 	FGameTexture *FindGameTexture(const char *texname, ETextureType usetype = ETextureType::MiscPatch,
 	                              BITFIELD flags = TEXMAN_TryAny);
 
