@@ -274,7 +274,7 @@ else()
     configure_file("${CMAKE_SOURCE_DIR}/steam_appid.txt" "steam_appid.txt" COPYONLY)
 
 	install(FILES "${CMAKE_SOURCE_DIR}/libraries/steamworks/redistributable_bin/linux64/libsteam_api.so"
-		DESTINATION "lib/libsteam_api.so"
+		DESTINATION "lib"
 		COMPONENT "Steam API")
 endif()
 # install(FILES "libraries/steamworks/redistributable_bin/win64/steam_api64.dllo"
