@@ -43,7 +43,7 @@
 #ifdef __sun
 #include <fcntl.h>
 #endif
-#endif
+// #endif
 
 #include <steam/steam_api.h>
 
@@ -359,13 +359,13 @@ static void GenerateGameID()
 static void I_NetLog(const char *text, ...)
 {
 	// todo: use better abstraction once everything is migrated to in-game start screens.
-#if defined _WIN32 || defined __APPLE__
-	va_list ap;
-	va_start(ap, text);
-	VPrintf(PRINT_HIGH, text, ap);
-	Printf("\n");
-	va_end(ap);
-#else
+	// #if defined _WIN32 || defined __APPLE__
+	// 	va_list ap;
+	// 	va_start(ap, text);
+	// 	VPrintf(PRINT_HIGH, text, ap);
+	// 	Printf("\n");
+	// 	va_end(ap);
+	// #else
 	FString str;
 	va_list argptr;
 
@@ -373,7 +373,7 @@ static void I_NetLog(const char *text, ...)
 	str.VFormat(text, argptr);
 	va_end(argptr);
 	fprintf(stderr, "\r%-40s\n", str.GetChars());
-#endif
+	// #endif
 }
 
 // Gracefully closes the net window so that any error messaging can be properly displayed.
@@ -574,7 +574,7 @@ static void GetPacket(uint64_t *from = nullptr)
 		}
 		else if (err != WSAEWOULDBLOCK)
 		{
-			I_Error("Failed to get packet: %s", neterror());
+			// I_Error("Failed to get packet: %s", neterror());
 		}
 		else
 		{
