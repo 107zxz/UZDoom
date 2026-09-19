@@ -531,8 +531,8 @@ static void SendPacket(uint64_t toSteamID)
 
 	// TransmitBuffer[size + 4] = '\0';
 
-	TArray<uint8_t> b64 = base64_encode(TransmitBuffer, size + 4);
-	Printf("Sending packet with contents \"%s\" to steam id %lu\n", (const char *)b64.Data(), toSteamID);
+	// TArray<uint8_t> b64 = base64_encode(TransmitBuffer, size + 4);
+	// Printf("Sending packet with contents \"%s\" to steam id %lu\n", (const char *)b64.Data(), toSteamID);
 
 	SteamNetworking()->SendP2PPacket(t, TransmitBuffer, size + 4, k_EP2PSendUnreliable);
 	// sendto(MySocket, (const char *)TransmitBuffer, size + 4, 0, (const sockaddr *)&to, sizeof(to));
