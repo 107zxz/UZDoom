@@ -27,12 +27,12 @@
 #include <string.h>
 
 /* [Petteri] Use Winsock if compiling for Win32: */
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-#include <windows.h>
-#include <winsock.h>
-#else
+// #ifdef _WIN32
+// #define WIN32_LEAN_AND_MEAN
+// #define NOMINMAX
+// #include <windows.h>
+// #include <winsock.h>
+// #else
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netdb.h>
@@ -79,13 +79,13 @@ typedef int SOCKET;
 #define IPPORT_USERRESERVED 5000
 #endif
 
-#ifdef _WIN32
-#include "common/scripting/dap/GameEventEmit.h"
-typedef int socklen_t;
-const char *neterror(void);
-#else
-#define neterror() strerror(errno)
-#endif
+// #ifdef _WIN32
+// #include "common/scripting/dap/GameEventEmit.h"
+// typedef int socklen_t;
+// const char *neterror(void);
+// #else
+// #define neterror() strerror(errno)
+// #endif
 
 // TODO: Remove noverification after optfile allows properly handling unverified files.
 FARG(noverification, "Multiplayer",
@@ -274,20 +274,20 @@ int netInitCount = 0;
 
 void StartNetworkLean()
 {
-#ifdef _WIN32
-	if (!DebugServer::RuntimeEvents::IsDebugServerRunning())
-	{
-		netInitCount++;
-		if (netInitCount == 1)
-		{
-			WSADATA data;
-			if (WSAStartup(MAKEWORD(2, 2), &data))
-				I_FatalError("Couldn't initialize Windows sockets");
-		}
-	}
-#else
+	// #ifdef _WIN32
+	// 	if (!DebugServer::RuntimeEvents::IsDebugServerRunning())
+	// 	{
+	// 		netInitCount++;
+	// 		if (netInitCount == 1)
+	// 		{
+	// 			WSADATA data;
+	// 			if (WSAStartup(MAKEWORD(2, 2), &data))
+	// 				I_FatalError("Couldn't initialize Windows sockets");
+	// 		}
+	// 	}
+	// #else
 	netInitCount++;
-#endif
+	// #endif
 }
 
 static void CloseNetworkLean()
@@ -295,24 +295,24 @@ static void CloseNetworkLean()
 	if (netInitCount == 0)
 		return;
 	netInitCount--;
-#ifdef _WIN32
-	if (netInitCount == 0)
-	{
-		if (!DebugServer::RuntimeEvents::IsDebugServerRunning())
-		{
-			WSACleanup();
-		}
-	}
-#endif
+	// #ifdef _WIN32
+	// 	if (netInitCount == 0)
+	// 	{
+	// 		if (!DebugServer::RuntimeEvents::IsDebugServerRunning())
+	// 		{
+	// 			WSACleanup();
+	// 		}
+	// 	}
+	// #endif
 }
 
 bool IsNetworkStartedLean()
 {
-#ifdef _WIN32
-	return netInitCount > 0 || DebugServer::RuntimeEvents::IsDebugServerRunning();
-#else
+	// #ifdef _WIN32
+	// 	return netInitCount > 0 || DebugServer::RuntimeEvents::IsDebugServerRunning();
+	// #else
 	return netInitCount > 0;
-#endif
+	// #endif
 }
 
 static void StartNetwork(bool autoPort)
@@ -1435,105 +1435,105 @@ bool I_InitNetwork()
 	return true;
 }
 
-#ifdef _WIN32
-const char *neterror()
-{
-	static char neterr[16];
-	int         code;
+// #ifdef _WIN32
+// const char *neterror()
+// {
+// 	static char neterr[16];
+// 	int         code;
 
-	switch (code = WSAGetLastError())
-	{
-	case WSAEACCES:
-		return "EACCES";
-	case WSAEADDRINUSE:
-		return "EADDRINUSE";
-	case WSAEADDRNOTAVAIL:
-		return "EADDRNOTAVAIL";
-	case WSAEAFNOSUPPORT:
-		return "EAFNOSUPPORT";
-	case WSAEALREADY:
-		return "EALREADY";
-	case WSAECONNABORTED:
-		return "ECONNABORTED";
-	case WSAECONNREFUSED:
-		return "ECONNREFUSED";
-	case WSAECONNRESET:
-		return "ECONNRESET";
-	case WSAEDESTADDRREQ:
-		return "EDESTADDRREQ";
-	case WSAEFAULT:
-		return "EFAULT";
-	case WSAEHOSTDOWN:
-		return "EHOSTDOWN";
-	case WSAEHOSTUNREACH:
-		return "EHOSTUNREACH";
-	case WSAEINPROGRESS:
-		return "EINPROGRESS";
-	case WSAEINTR:
-		return "EINTR";
-	case WSAEINVAL:
-		return "EINVAL";
-	case WSAEISCONN:
-		return "EISCONN";
-	case WSAEMFILE:
-		return "EMFILE";
-	case WSAEMSGSIZE:
-		return "EMSGSIZE";
-	case WSAENETDOWN:
-		return "ENETDOWN";
-	case WSAENETRESET:
-		return "ENETRESET";
-	case WSAENETUNREACH:
-		return "ENETUNREACH";
-	case WSAENOBUFS:
-		return "ENOBUFS";
-	case WSAENOPROTOOPT:
-		return "ENOPROTOOPT";
-	case WSAENOTCONN:
-		return "ENOTCONN";
-	case WSAENOTSOCK:
-		return "ENOTSOCK";
-	case WSAEOPNOTSUPP:
-		return "EOPNOTSUPP";
-	case WSAEPFNOSUPPORT:
-		return "EPFNOSUPPORT";
-	case WSAEPROCLIM:
-		return "EPROCLIM";
-	case WSAEPROTONOSUPPORT:
-		return "EPROTONOSUPPORT";
-	case WSAEPROTOTYPE:
-		return "EPROTOTYPE";
-	case WSAESHUTDOWN:
-		return "ESHUTDOWN";
-	case WSAESOCKTNOSUPPORT:
-		return "ESOCKTNOSUPPORT";
-	case WSAETIMEDOUT:
-		return "ETIMEDOUT";
-	case WSAEWOULDBLOCK:
-		return "EWOULDBLOCK";
-	case WSAHOST_NOT_FOUND:
-		return "HOST_NOT_FOUND";
-	case WSANOTINITIALISED:
-		return "NOTINITIALISED";
-	case WSANO_DATA:
-		return "NO_DATA";
-	case WSANO_RECOVERY:
-		return "NO_RECOVERY";
-	case WSASYSNOTREADY:
-		return "SYSNOTREADY";
-	case WSATRY_AGAIN:
-		return "TRY_AGAIN";
-	case WSAVERNOTSUPPORTED:
-		return "VERNOTSUPPORTED";
-	case WSAEDISCON:
-		return "EDISCON";
+// 	switch (code = WSAGetLastError())
+// 	{
+// 	case WSAEACCES:
+// 		return "EACCES";
+// 	case WSAEADDRINUSE:
+// 		return "EADDRINUSE";
+// 	case WSAEADDRNOTAVAIL:
+// 		return "EADDRNOTAVAIL";
+// 	case WSAEAFNOSUPPORT:
+// 		return "EAFNOSUPPORT";
+// 	case WSAEALREADY:
+// 		return "EALREADY";
+// 	case WSAECONNABORTED:
+// 		return "ECONNABORTED";
+// 	case WSAECONNREFUSED:
+// 		return "ECONNREFUSED";
+// 	case WSAECONNRESET:
+// 		return "ECONNRESET";
+// 	case WSAEDESTADDRREQ:
+// 		return "EDESTADDRREQ";
+// 	case WSAEFAULT:
+// 		return "EFAULT";
+// 	case WSAEHOSTDOWN:
+// 		return "EHOSTDOWN";
+// 	case WSAEHOSTUNREACH:
+// 		return "EHOSTUNREACH";
+// 	case WSAEINPROGRESS:
+// 		return "EINPROGRESS";
+// 	case WSAEINTR:
+// 		return "EINTR";
+// 	case WSAEINVAL:
+// 		return "EINVAL";
+// 	case WSAEISCONN:
+// 		return "EISCONN";
+// 	case WSAEMFILE:
+// 		return "EMFILE";
+// 	case WSAEMSGSIZE:
+// 		return "EMSGSIZE";
+// 	case WSAENETDOWN:
+// 		return "ENETDOWN";
+// 	case WSAENETRESET:
+// 		return "ENETRESET";
+// 	case WSAENETUNREACH:
+// 		return "ENETUNREACH";
+// 	case WSAENOBUFS:
+// 		return "ENOBUFS";
+// 	case WSAENOPROTOOPT:
+// 		return "ENOPROTOOPT";
+// 	case WSAENOTCONN:
+// 		return "ENOTCONN";
+// 	case WSAENOTSOCK:
+// 		return "ENOTSOCK";
+// 	case WSAEOPNOTSUPP:
+// 		return "EOPNOTSUPP";
+// 	case WSAEPFNOSUPPORT:
+// 		return "EPFNOSUPPORT";
+// 	case WSAEPROCLIM:
+// 		return "EPROCLIM";
+// 	case WSAEPROTONOSUPPORT:
+// 		return "EPROTONOSUPPORT";
+// 	case WSAEPROTOTYPE:
+// 		return "EPROTOTYPE";
+// 	case WSAESHUTDOWN:
+// 		return "ESHUTDOWN";
+// 	case WSAESOCKTNOSUPPORT:
+// 		return "ESOCKTNOSUPPORT";
+// 	case WSAETIMEDOUT:
+// 		return "ETIMEDOUT";
+// 	case WSAEWOULDBLOCK:
+// 		return "EWOULDBLOCK";
+// 	case WSAHOST_NOT_FOUND:
+// 		return "HOST_NOT_FOUND";
+// 	case WSANOTINITIALISED:
+// 		return "NOTINITIALISED";
+// 	case WSANO_DATA:
+// 		return "NO_DATA";
+// 	case WSANO_RECOVERY:
+// 		return "NO_RECOVERY";
+// 	case WSASYSNOTREADY:
+// 		return "SYSNOTREADY";
+// 	case WSATRY_AGAIN:
+// 		return "TRY_AGAIN";
+// 	case WSAVERNOTSUPPORTED:
+// 		return "VERNOTSUPPORTED";
+// 	case WSAEDISCON:
+// 		return "EDISCON";
 
-	default:
-		mysnprintf(neterr, countof(neterr), "%d", code);
-		return neterr;
-	}
-}
-#endif
+// 	default:
+// 		mysnprintf(neterr, countof(neterr), "%d", code);
+// 		return neterr;
+// 	}
+// }
+// #endif
 
 class CallbackHandler
 {
