@@ -6,6 +6,7 @@
 #include <vector>
 #include <dwmapi.h>
 #include <malloc.h>
+#include <steam/steam_api.h>
 
 #pragma comment(lib, "dwmapi.lib")
 
@@ -890,6 +891,7 @@ void Win32DisplayWindow::ProcessEvents()
 			break;
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
+		
 	}
 }
 
@@ -902,6 +904,7 @@ void Win32DisplayWindow::RunLoop()
 			break;
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
+		SteamAPI_RunCallbacks();
 	}
 	ExitRunLoop = false;
 }
