@@ -63,16 +63,22 @@
 #include "base64.h"
 
 /* [Petteri] Get more portable: */
-#ifndef _WIN32
-typedef int SOCKET;
-#define SOCKET_ERROR      -1
-#define INVALID_SOCKET    -1
-#define closesocket       close
-#define ioctlsocket       ioctl
-#define Sleep(x)          usleep(x * 1000)
-#define WSAEWOULDBLOCK    EWOULDBLOCK
-#define WSAECONNRESET     ECONNRESET
-#define WSAGetLastError() errno
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#include <winsock.h>
+#else
+#include <arpa/inet.h>
+#include <errno.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <sys/ioctl.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#ifdef __sun
+#include <fcntl.h>
+#endif
 #endif
 
 #ifndef IPPORT_USERRESERVED
