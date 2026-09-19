@@ -338,12 +338,31 @@ void CloseNetwork()
 {
 	// if (MySocket != INVALID_SOCKET)
 	// {
-	// 	closesocket(MySocket);
-	// 	MySocket = INVALID_SOCKET;
-	// 	netgame  = false;
+	//  closesocket(MySocket);
+	//  MySocket = INVALID_SOCKET;
+	//  netgame  = false;
 	// }
 
-	// Todo: Close steam network
+	// Close Steam P2P sessions with any connected peers to ensure the
+	// SteamNetworkingSockets low-level transport can be cleanly shut down.
+	if (SteamAPI_IsSteamRunning())
+	{
+		for (size_t i = 0; i < std::extent_v<decltype(Connected)>; ++i)
+		{
+			if (Connected[i].SteamID != 0u)
+			{
+				CSteamID id;
+				id.SetFromUint64(Connected[i].SteamID);
+				SteamNetworking()->CloseP2PSessionWithUser(id);
+				// Also close channel 0 explicitly if used.
+				SteamNetworking()->CloseP2PChannelWithUser(id, 0);
+			}
+		}
+		Printf("Closed Steam P2P sessions for all connected peers");
+	}
+
+	// Shutdown our callback handler before final Steam shutdown.
+	I_ShutdownSteamCallbacks();
 
 	CloseNetworkLean();
 }
