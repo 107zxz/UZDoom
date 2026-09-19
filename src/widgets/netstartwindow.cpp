@@ -25,28 +25,30 @@
 #include "gstrings.h"
 #include "netstartwindow.h"
 #include "version.h"
+#include <steam/steam_api.h>
 
-NetStartWindow* NetStartWindow::Instance = nullptr;
+NetStartWindow *NetStartWindow::Instance = nullptr;
 
-void NetStartWindow::NetInit(const char* message, bool host)
+void NetStartWindow::NetInit(const char *message, bool host)
 {
 	if (!Instance)
 	{
 		Instance = new NetStartWindow(host);
-		// Instance->SetFrameGeometry((screenSize.width - windowWidth) * 0.5, (screenSize.height - windowHeight) * 0.5, windowWidth, windowHeight);
+		// Instance->SetFrameGeometry((screenSize.width - windowWidth) * 0.5, (screenSize.height - windowHeight) * 0.5,
+		// windowWidth, windowHeight);
 		Instance->Show();
 	}
 
 	Instance->SetMessage(message);
 }
 
-void NetStartWindow::NetMessage(const char* message)
+void NetStartWindow::NetMessage(const char *message)
 {
 	if (Instance)
 		Instance->SetMessage(message);
 }
 
-void NetStartWindow::NetConnect(int client, const char* name, unsigned flags, int status)
+void NetStartWindow::NetConnect(int client, const char *name, unsigned flags, int status)
 {
 	if (!Instance)
 		return;
@@ -147,19 +149,19 @@ int NetStartWindow::GetNetBanClient()
 	return next;
 }
 
-bool NetStartWindow::NetLoop(bool (*loopCallback)(void*), void* data)
+bool NetStartWindow::NetLoop(bool (*loopCallback)(void *), void *data)
 {
 	if (!Instance)
 		return false;
 
-	Instance->timer_callback = loopCallback;
-	Instance->userdata = data;
+	Instance->timer_callback    = loopCallback;
+	Instance->userdata          = data;
 	Instance->CallbackException = {};
 
 	DisplayWindow::RunLoop();
 
 	Instance->timer_callback = nullptr;
-	Instance->userdata = nullptr;
+	Instance->userdata       = nullptr;
 
 	if (Instance->CallbackException)
 		std::rethrow_exception(Instance->CallbackException);
@@ -167,17 +169,19 @@ bool NetStartWindow::NetLoop(bool (*loopCallback)(void*), void* data)
 	return Instance->exitreason;
 }
 
-NetStartWindow::NetStartWindow(bool host) : Widget(nullptr, WidgetType::Window, RenderAPI::Unspecified, WindowParams{
-	.size = { 450, 600 },
-	.minSize = { 300, 300 },
+NetStartWindow::NetStartWindow(bool host)
+	: Widget(nullptr, WidgetType::Window, RenderAPI::Unspecified,
+	         WindowParams{
+				 .size    = {450, 600},
+				 .minSize = {300, 300},
 })
 {
 	SetWindowTitle(GAMENAME);
 
-	MessageLabel = new TextLabel(this);
+	MessageLabel  = new TextLabel(this);
 	ProgressLabel = new TextLabel(this);
-	LobbyWindow = new ListView(this);
-	AbortButton = new PushButton(this);
+	LobbyWindow   = new ListView(this);
+	AbortButton   = new PushButton(this);
 
 	MessageLabel->SetTextAlignment(TextLabelAlignment::Center);
 	ProgressLabel->SetTextAlignment(TextLabelAlignment::Center);
@@ -189,28 +193,28 @@ NetStartWindow::NetStartWindow(bool host) : Widget(nullptr, WidgetType::Window, 
 	{
 		hosting = true;
 
-		ForceStartButton = new PushButton(this);
+		ForceStartButton          = new PushButton(this);
 		ForceStartButton->OnClick = [this]() { ForceStart(); };
 		ForceStartButton->SetText(GStrings.GetString("ACTION_STARTGAME"));
 
-		KickButton = new PushButton(this);
+		KickButton          = new PushButton(this);
 		KickButton->OnClick = [this]() { OnKick(); };
 		KickButton->SetText(GStrings.GetString("ACTION_KICK"));
 
-		BanButton = new PushButton(this);
+		BanButton          = new PushButton(this);
 		BanButton->OnClick = [this]() { OnBan(); };
 		BanButton->SetText(GStrings.GetString("ACTION_BAN"));
 	}
 
 	// Client number, flags, name, status.
-	LobbyWindow->SetColumnWidths({ 30.0, 30.0, 200.0, 50.0 });
+	LobbyWindow->SetColumnWidths({30.0, 30.0, 200.0, 50.0});
 
-	CallbackTimer = new Timer(this);
+	CallbackTimer              = new Timer(this);
 	CallbackTimer->FuncExpired = [this]() { OnCallbackTimerExpired(); };
 	CallbackTimer->Start(500);
 }
 
-void NetStartWindow::SetMessage(const std::string& message)
+void NetStartWindow::SetMessage(const std::string &message)
 {
 	MessageLabel->SetText(message);
 }
@@ -272,7 +276,7 @@ void NetStartWindow::OnGeometryChanged()
 	double w = GetWidth();
 	double h = GetHeight();
 
-	double y = 15.0;
+	double y           = 15.0;
 	double labelheight = MessageLabel->GetPreferredHeight();
 	MessageLabel->SetFrameGeometry(Rect::xywh(5.0, y, w - 10.0, labelheight));
 	y += labelheight;
@@ -287,11 +291,11 @@ void NetStartWindow::OnGeometryChanged()
 	y = GetHeight() - 15.0 - AbortButton->GetPreferredHeight();
 	if (hosting)
 	{
-		Widget *bs[] = {AbortButton, BanButton, KickButton, ForceStartButton};
-		const size_t n = sizeof(bs)/sizeof(bs[0]);
-		double ws[n];
-		double hs[n];
-		double pos = 0, padding = 10.0;
+		Widget      *bs[] = {AbortButton, BanButton, KickButton, ForceStartButton};
+		const size_t n    = sizeof(bs) / sizeof(bs[0]);
+		double       ws[n];
+		double       hs[n];
+		double       pos = 0, padding = 10.0;
 		for (size_t i = 0; i < n; i++)
 		{
 			ws[i] = bs[i]->GetPreferredWidth();
@@ -316,7 +320,9 @@ void NetStartWindow::OnCallbackTimerExpired()
 	static auto t = 0u;
 	if (timer_callback)
 	{
-		if (t++%60 == 5) DEBUG_LOG("%s", "tick");
+		SteamAPI_RunCallbacks();
+		if (t++ % 60 == 5)
+			DEBUG_LOG("%s", "tick");
 		bool result = false;
 		try
 		{
