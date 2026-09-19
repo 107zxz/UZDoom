@@ -31,8 +31,8 @@
 #include <stdint.h>
 #include <steam/steam_api.h>
 
-inline constexpr size_t MAXPLAYERS = 64u;
-inline constexpr int SMAXPLAYERS = static_cast<int>(MAXPLAYERS);
+inline constexpr size_t MAXPLAYERS  = 64u;
+inline constexpr int    SMAXPLAYERS = static_cast<int>(MAXPLAYERS);
 
 EXTERN_FARG(host);
 EXTERN_FARG(join);
@@ -125,5 +125,9 @@ void CloseNetwork();
 
 void StartNetworkLean();
 bool IsNetworkStartedLean();
+
+// Initialize Steam callback handlers. Call after SteamAPI_Init().
+void I_InitSteamCallbacks();
+void I_ShutdownSteamCallbacks();
 
 #endif

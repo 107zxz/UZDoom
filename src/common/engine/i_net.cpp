@@ -1544,7 +1544,26 @@ class CallbackHandler
 	// CCallResult<CallbackHandler, LobbyCreated_t> m_LobbyCreatedCallResult;
 };
 
-CallbackHandler handler;
+// Constructed after SteamAPI_Init() to avoid static initialization ordering issues.
+static CallbackHandler *gSteamCallbackHandler = nullptr;
+
+void I_InitSteamCallbacks()
+{
+	if (!gSteamCallbackHandler)
+	{
+		gSteamCallbackHandler = new CallbackHandler();
+		I_NetLog("Steam callbacks initialized");
+	}
+}
+
+void I_ShutdownSteamCallbacks()
+{
+	if (gSteamCallbackHandler)
+	{
+		delete gSteamCallbackHandler;
+		gSteamCallbackHandler = nullptr;
+	}
+}
 
 void CallbackHandler::OnLobbyCreated(LobbyCreated_t *cb)
 {
@@ -1557,6 +1576,7 @@ void CallbackHandler::OnLobbyCreated(LobbyCreated_t *cb)
 
 void CallbackHandler::OnP2PSessionRequest(P2PSessionRequest_t *cb)
 {
-	// Blanket recieve packets. Add a lobby restriction sometime
+	// Blanket receive packets. Add a lobby restriction sometime
+	I_NetLog("Received P2P session request from %llu", cb->m_steamIDRemote.ConvertToUint64());
 	SteamNetworking()->AcceptP2PSessionWithUser(cb->m_steamIDRemote);
 }

@@ -1597,7 +1597,7 @@ void D_DoomLoop()
 		{
 			GStrings.SetDefaultGender(
 				players[consoleplayer].userinfo.GetGender()); // cannot be done when the CVAR changes because we don't
-			                                                  // know if it's for the consoleplayer.
+				                                              // know if it's for the consoleplayer.
 
 			// frame syncronous IO operations
 			if (gametic > lasttic)
@@ -3239,8 +3239,8 @@ FString System_GetLocationDescription()
 	auto &vp    = r_viewpoint;
 	auto  Level = vp.ViewLevel;
 	return Level == nullptr
-	           ? FString()
-	           : FStringf(
+			   ? FString()
+			   : FStringf(
 					 "Map %s: \"%s\",\nx = %1.4f, y = %1.4f, z = %1.4f, angle = %1.4f, pitch = %1.4f\n%llu fps\n\n",
 					 Level->MapName.GetChars(), Level->LevelName.GetChars(), vp.Pos.X, vp.Pos.Y, vp.Pos.Z,
 					 vp.Angles.Yaw.Degrees(), vp.Angles.Pitch.Degrees(), (unsigned long long)LastFPS);
@@ -3599,10 +3599,10 @@ static int D_InitGame(const FIWADInfo *iwad_info, std::vector<FileSys::ResourceN
 		int         match;
 		const char *name;
 	} blanket[] = {
-		{		 GAME_Raven,          "game-Raven"},
+		{         GAME_Raven,          "game-Raven"},
 		{GAME_DoomStrifeChex, "game-DoomStrifeChex"},
 		{      GAME_DoomChex,       "game-DoomChex"},
-		{		   GAME_Any,                  NULL}
+		{           GAME_Any,                  NULL}
     };
 
 	for (auto &inf : blanket)
@@ -4368,7 +4368,10 @@ int GameMain()
 		exit(1);
 
 	if (SteamAPI_Init())
+	{
 		SteamNetworkingUtils()->InitRelayNetworkAccess();
+		I_InitSteamCallbacks();
+	}
 
 	// On Windows, prefer the native win32 backend.
 	// On other platforms, use SDL until the other backends are more mature.
