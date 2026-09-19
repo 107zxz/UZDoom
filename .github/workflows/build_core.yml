@@ -360,6 +360,7 @@ jobs:
         fi
 
         mkdir -p ${app}/Contents/Frameworks
+        cp libsteam_api.dylib ${app}/Contents/Frameworks/
         cp -L $(brew --prefix sdl3)/lib/libSDL3.dylib ${app}/Contents/Frameworks/libSDL3.dylib
         cp $(brew --prefix molten-vk)/lib/libMoltenVK.dylib ${app}/Contents/Frameworks/
         dylibbundler -ns -of -cd -b \
@@ -406,6 +407,7 @@ jobs:
         # this is actually in the correct place, but the appimage linter complains
         # copying it for now, just in case some tooling wants it there
         mv "${pfx}/share/metainfo/org.zdoom.UZDoom.metainfo.xml" "${pfx}/share/metainfo/org.zdoom.UZDoom.appdata.xml"
+        # cp "libsteam_api.so" "${pfx}/lib/libsteam_api.so"
 
         # cleanup
         # {
@@ -437,7 +439,7 @@ jobs:
           --executable="${pfx}/bin/uzdoom" \
           --desktop-file="${pfx}/share/applications/org.zdoom.UZDoom.desktop" \
           --library="$(library libopenal.so.)" \
-          --library="${pfx}/lib/libsteam_api.so" \
+          # --library="libsteam_api.so" \
           --icon-file="${pfx}/share/icons/hicolor/scalable/apps/org.zdoom.UZDoom.svg"
 
         mv *.AppImage "package/${NAME}.AppImage"
