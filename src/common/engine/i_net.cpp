@@ -32,7 +32,7 @@
 // #define NOMINMAX
 // #include <windows.h>
 // #include <winsock.h>
-// #else
+#ifndef _WIN32
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netdb.h>
@@ -43,7 +43,7 @@
 #ifdef __sun
 #include <fcntl.h>
 #endif
-// #endif
+#endif
 
 #include <steam/steam_api.h>
 
