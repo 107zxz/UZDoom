@@ -769,7 +769,7 @@ if (DEFINED USE_UPDATER AND USE_UPDATER)
 		widgets/updatebuttonbar.cpp
 	)
 
-	add_compile_definitions("HAS_UPDATER")
+	# add_compile_definitions("HAS_UPDATER")
 else()
 	set (UPDATER_SOURCES "")
 endif()
