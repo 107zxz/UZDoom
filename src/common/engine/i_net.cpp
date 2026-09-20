@@ -1554,8 +1554,9 @@ CallbackHandler handler;
 
 void CallbackHandler::OnLobbyCreated(LobbyCreated_t *cb)
 {
+	uint64_t steamID = SteamUser()->GetSteamID().ConvertToUint64();
 	char ownerID[32];
-	snprintf(ownerID, 32, "%lu", SteamUser()->GetSteamID().ConvertToUint64());
+	snprintf(ownerID, 32, "%I64u", steamID);
 	Printf("Started a steam lobby with id: %lld\n", cb->m_ulSteamIDLobby);
 	SteamMatchmaking()->SetLobbyData(cb->m_ulSteamIDLobby, "amydoomowner", SteamFriends()->GetPersonaName());
 	SteamMatchmaking()->SetLobbyData(cb->m_ulSteamIDLobby, "owner_id", ownerID);
