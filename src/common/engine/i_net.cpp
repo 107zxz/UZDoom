@@ -1546,6 +1546,9 @@ class CallbackHandler
   private:
 	STEAM_CALLBACK(CallbackHandler, OnLobbyCreated, LobbyCreated_t);
 	STEAM_CALLBACK(CallbackHandler, OnP2PSessionRequest, P2PSessionRequest_t);
+	STEAM_CALLBACK(CallbackHandler, OnP2PSessionConnectFail, P2PSessionConnectFail_t);
+
+  public:
 	// void                                         OnLobbyCreated(LobbyCreated_t *cb, bool bIOFailure);
 	// CCallResult<CallbackHandler, LobbyCreated_t> m_LobbyCreatedCallResult;
 };
@@ -1566,4 +1569,9 @@ void CallbackHandler::OnP2PSessionRequest(P2PSessionRequest_t *cb)
 {
 	// Blanket recieve packets. Add a lobby restriction sometime
 	SteamNetworking()->AcceptP2PSessionWithUser(cb->m_steamIDRemote);
+}
+
+void CallbackHandler::OnP2PSessionConnectFail(P2PSessionConnectFail_t *cb)
+{
+	Printf("Failed to connect to %lld with error %d\n", cb->m_steamIDRemote.ConvertToUint64(), cb->m_eP2PSessionError);
 }
