@@ -32,7 +32,8 @@
 #include "widgets/themedata.h"
 #include <d_main.h>
 
-constexpr double EditHeight = 24.0;
+constexpr double      EditHeight = 24.0;
+std::vector<CSteamID> foundLobbies;
 
 NetworkPage::NetworkPage(LauncherWindow *launcher, const FStartupSelectionInfo &info)
 	: Widget(nullptr), Launcher(launcher)
@@ -464,7 +465,7 @@ void JoinSubPage::SetValues(FStartupSelectionInfo &info) const
 	// info.AdditionalNetArgs.AppendFormat(" -join %s", addr.GetChars());
 	if (steam_enabled)
 	{
-		CSteamID lobbyID = SteamMatchmaking()->GetLobbyByIndex(LobbyList->GetSelectedItem());
+		CSteamID lobbyID = foundLobbies[LobbyList->GetSelectedItem()];
 
 		const char *ownerID = SteamMatchmaking()->GetLobbyData(lobbyID, "owner_id");
 
@@ -530,6 +531,9 @@ void JoinSubPage::OnLobbySearch(LobbyMatchList_t *cb)
 {
 	// TODO: Save this info somewhere and pull the steam ID when I try to join
 
+	// Clear lobby list
+	foundLobbies.clear();
+
 	int l = LobbyList->GetItemAmount();
 	for (int i = 0; i < l; i++)
 		LobbyList->RemoveItem();
@@ -539,11 +543,18 @@ void JoinSubPage::OnLobbySearch(LobbyMatchList_t *cb)
 		CSteamID lobbyID = SteamMatchmaking()->GetLobbyByIndex(i);
 
 		const char *datkey;
+		const char *playerID;
 
 		// SteamMatchmaking()->GetLobbyDataByIndex(lobbyID, 0, datkey, 20, datval, 20);
-		datkey = SteamMatchmaking()->GetLobbyData(lobbyID, "amydoomowner");
+		datkey   = SteamMatchmaking()->GetLobbyData(lobbyID, "amydoomowner");
+		playerID = SteamMatchmaking()->GetLobbyData(lobbyID, "owner_id");
+
+		// Printf("Lobby %d: %s (%s)\n", i, datkey, playerID);
 
 		if (datkey[0] != '\0')
+		{
 			LobbyList->AddItem(datkey);
+			foundLobbies.push_back(lobbyID);
+		}
 	}
 }
