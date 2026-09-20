@@ -393,6 +393,9 @@ extern bool                             insave;
 extern TDeletingArray<FLightDefaults *> LightDefaults;
 extern FName                            MessageBoxClass;
 
+bool steam_enabled = false;
+
+
 CUSTOM_CVAR(Float, i_timescale, 1.0f, CVAR_NOINITCALL | CVAR_VIRTUAL)
 {
 	if (netgame)

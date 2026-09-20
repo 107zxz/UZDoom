@@ -1559,8 +1559,8 @@ void CallbackHandler::OnLobbyCreated(LobbyCreated_t *cb)
 #else
 	snprintf(ownerID, 32, "%llu", steamID);
 #endif
-	Printf("Started a steam lobby with id: %llu\n", cb->m_ulSteamIDLobby);
-	Printf("Passing my steam id: %llu\n", steamID);
+	Printf("Started a steam lobby with id: %I64u\n", cb->m_ulSteamIDLobby);
+	Printf("Passing my steam id: %I64u\n", steamID);
 	SteamMatchmaking()->SetLobbyData(cb->m_ulSteamIDLobby, "owner_id", ownerID);
 	SteamMatchmaking()->SetLobbyData(cb->m_ulSteamIDLobby, "amydoomowner", SteamFriends()->GetPersonaName());
 }

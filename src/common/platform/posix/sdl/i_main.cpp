@@ -105,7 +105,6 @@ FString sys_ostype;
 // The command line arguments.
 FArgs *Args;
 
-bool steam_enabled = false;
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
