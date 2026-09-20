@@ -1560,8 +1560,9 @@ void CallbackHandler::OnLobbyCreated(LobbyCreated_t *cb)
 	snprintf(ownerID, 32, "%llu", steamID);
 #endif
 	Printf("Started a steam lobby with id: %llu\n", cb->m_ulSteamIDLobby);
-	SteamMatchmaking()->SetLobbyData(cb->m_ulSteamIDLobby, "amydoomowner", SteamFriends()->GetPersonaName());
+	Printf("Passing my steam id: %llu\n", steamID);
 	SteamMatchmaking()->SetLobbyData(cb->m_ulSteamIDLobby, "owner_id", ownerID);
+	SteamMatchmaking()->SetLobbyData(cb->m_ulSteamIDLobby, "amydoomowner", SteamFriends()->GetPersonaName());
 }
 
 void CallbackHandler::OnP2PSessionRequest(P2PSessionRequest_t *cb)
