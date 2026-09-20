@@ -20,16 +20,18 @@
 #ifndef __D_MAIN__
 #define __D_MAIN__
 
+#include "c_cvars.h"
 #include "doomtype.h"
+#include "fs_filesystem.h"
 #include "gametype.h"
 #include "m_argv.h"
 #include "startupinfo.h"
-#include "c_cvars.h"
 #include "v_video.h"
-#include "fs_filesystem.h"
 #include <csignal>
 
-extern bool		advancedemo;
+extern bool steam_enabled;
+
+extern bool                  advancedemo;
 extern volatile sig_atomic_t gameloop_abort;
 EXTERN_CVAR(Bool, hud_toggled);
 void D_ToggleHud();
@@ -64,18 +66,15 @@ struct CRestartException
 	char dummy;
 };
 
-
-void D_Display ();
-
+void D_Display();
 
 //
 // BASE LEVEL
 //
-void D_PageTicker (void);
-void D_PageDrawer (void);
-void D_AdvanceDemo (void);
-void D_StartTitle (void);
-
+void D_PageTicker(void);
+void D_PageDrawer(void);
+void D_AdvanceDemo(void);
+void D_StartTitle(void);
 
 // [RH] Set this to something to draw an icon during the next screen refresh.
 extern const char *D_DrawIcon;
@@ -83,32 +82,31 @@ extern const char *D_DrawIcon;
 // [SP] Store the capabilities of the renderer in a global variable, to prevent excessive per-frame processing
 extern uint32_t r_renderercaps;
 
-
 struct FIWADInfo
 {
-	FString Name;			// Title banner text for this IWAD
-	FString Autoname;		// Name of autoload ini section for this IWAD
-	FString IWadname;		// Default name this game would use - this is for IWAD detection in GAMEINFO.
-	FString SupportWAD;		// Optional support WAD, load if present (initially implemented for id24)
-	int prio = 0;			// selection priority for given IWAD name.
-	FString Configname;		// Name of config section for this IWAD
-	FString Required;		// Requires another IWAD
-	uint32_t FgColor = 0;	// Foreground color for title banner
-	uint32_t BkColor = 0xc0c0c0;		// Background color for title banner
-	FString Song;
-	EGameType gametype = GAME_Doom;		// which game are we playing?
-	int StartupType = FStartupInfo::DefaultStartup;		// alternate startup type
-	FString MapInfo;		// Base mapinfo to load
-	bool nokeyboardcheats = false;		// disable keyboard cheats
-	bool SkipBexStringsIfLanguage = false;
-	TArray<FString> Load;	// Wads to be loaded with this one.
-	TArray<FString> Lumps;	// Lump names for identification
-	TArray<FString> DeleteLumps;	// Lumps which must be deleted from the directory.
-	int flags = 0;
-	int LoadWidescreen = -1;
-	int LoadBrightmaps = -1;
-	int LoadLights = -1;
-	//FString DiscordAppId = nullptr;
+	FString         Name;               // Title banner text for this IWAD
+	FString         Autoname;           // Name of autoload ini section for this IWAD
+	FString         IWadname;           // Default name this game would use - this is for IWAD detection in GAMEINFO.
+	FString         SupportWAD;         // Optional support WAD, load if present (initially implemented for id24)
+	int             prio = 0;           // selection priority for given IWAD name.
+	FString         Configname;         // Name of config section for this IWAD
+	FString         Required;           // Requires another IWAD
+	uint32_t        FgColor = 0;        // Foreground color for title banner
+	uint32_t        BkColor = 0xc0c0c0; // Background color for title banner
+	FString         Song;
+	EGameType       gametype    = GAME_Doom;                    // which game are we playing?
+	int             StartupType = FStartupInfo::DefaultStartup; // alternate startup type
+	FString         MapInfo;                                    // Base mapinfo to load
+	bool            nokeyboardcheats         = false;           // disable keyboard cheats
+	bool            SkipBexStringsIfLanguage = false;
+	TArray<FString> Load;        // Wads to be loaded with this one.
+	TArray<FString> Lumps;       // Lump names for identification
+	TArray<FString> DeleteLumps; // Lumps which must be deleted from the directory.
+	int             flags          = 0;
+	int             LoadWidescreen = -1;
+	int             LoadBrightmaps = -1;
+	int             LoadLights     = -1;
+	// FString DiscordAppId = nullptr;
 	FString SteamAppId = nullptr;
 };
 
@@ -116,11 +114,12 @@ struct FFoundWadInfo
 {
 	FString mFullPath;
 	FString mRequiredPath;
-	int mInfoIndex = -1;	// must be an index because of reallocation
+	int     mInfoIndex = -1; // must be an index because of reallocation
 
-	FFoundWadInfo() {}
-	FFoundWadInfo(const FString &s1, const FString &s2, int index)
-		: mFullPath(s1), mRequiredPath(s2), mInfoIndex(index)
+	FFoundWadInfo()
+	{
+	}
+	FFoundWadInfo(const FString &s1, const FString &s2, int index) : mFullPath(s1), mRequiredPath(s2), mInfoIndex(index)
 	{
 	}
 };
@@ -133,38 +132,42 @@ struct FFoundWadInfo
 
 class FIWadManager
 {
-	TArray<FIWADInfo> mIWadInfos;
-	TArray<FString> mIWadNames;
-	TArray<FString> mSearchPaths;
-	TArray<FString> mRecursiveSearchPaths;
-	TArray<FString> mOrderNames;
+	TArray<FIWADInfo>     mIWadInfos;
+	TArray<FString>       mIWadNames;
+	TArray<FString>       mSearchPaths;
+	TArray<FString>       mRecursiveSearchPaths;
+	TArray<FString>       mOrderNames;
 	TArray<FFoundWadInfo> mFoundWads;
-	TArray<int> mLumpsFound;
+	TArray<int>           mLumpsFound;
 
-	void ParseIWadInfo(const char *fn, const char *data, int datasize, FIWADInfo *result = nullptr);
-	int ScanIWAD (const char *iwad);
-	int CheckIWADInfo(const char *iwad);
-	int IdentifyVersion (std::vector<FileSys::ResourceName>& wadfiles, const char *iwad, const char *zdoom_wad, const char *optional_wad);
-	void CollectSearchPaths();
-	void AddIWADCandidates(const char *dir, bool nosubdir = true);
-	void ValidateIWADs();
+	void    ParseIWadInfo(const char *fn, const char *data, int datasize, FIWADInfo *result = nullptr);
+	int     ScanIWAD(const char *iwad);
+	int     CheckIWADInfo(const char *iwad);
+	int     IdentifyVersion(std::vector<FileSys::ResourceName> &wadfiles, const char *iwad, const char *zdoom_wad,
+	                        const char *optional_wad);
+	void    CollectSearchPaths();
+	void    AddIWADCandidates(const char *dir, bool nosubdir = true);
+	void    ValidateIWADs();
 	FString IWADPathFileSearch(const FString &file);
-public:
 
+  public:
 	FIWadManager(const char *fn, const char *fnopt);
-	const FIWADInfo *FindIWAD(std::vector<FileSys::ResourceName>& wadfiles, const char *iwad, const char *basewad, const char *optionalwad);
-	const FString *GetAutoname(unsigned int num) const
+	const FIWADInfo *FindIWAD(std::vector<FileSys::ResourceName> &wadfiles, const char *iwad, const char *basewad,
+	                          const char *optionalwad);
+	const FString   *GetAutoname(unsigned int num) const
 	{
-		if (num < mIWadInfos.Size()) return &mIWadInfos[num].Autoname;
-		else return NULL;
+		if (num < mIWadInfos.Size())
+			return &mIWadInfos[num].Autoname;
+		else
+			return NULL;
 	}
 	int GetIWadFlags(unsigned int num) const
 	{
-		if (num < mIWadInfos.Size()) return mIWadInfos[num].flags;
-		else return 0;
+		if (num < mIWadInfos.Size())
+			return mIWadInfos[num].flags;
+		else
+			return 0;
 	}
-
-
 };
 
 EXTERN_CVAR(Int, gl_texture_filter)
@@ -184,7 +187,8 @@ inline bool V_IsHardwareRenderer()
 inline bool V_DisableIntelMipmap()
 {
 	constexpr char Intel[] = "Intel";
-	return !stricmp(screen->vendorstring, Intel) && (gl_texture_filter == 1 || gl_texture_filter == 5 || gl_texture_filter == 6);
+	return !stricmp(screen->vendorstring, Intel) &&
+	       (gl_texture_filter == 1 || gl_texture_filter == 5 || gl_texture_filter == 6);
 }
 
 inline bool V_IsTrueColor()

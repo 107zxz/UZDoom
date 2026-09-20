@@ -27,12 +27,11 @@ if(NOT FORCE_NO_LTO)
 	endif()
 endif()
 
-# if(WIN32)
-if (TRUE)
+if(WIN32)
 	option( USE_UPDATER "enable auto-updater" OFF )
 endif()
 
-if(USE_UPDATER)
+if(FALSE)
 	set( CURL_REQUIRED TRUE )
 
 	if (WIN32)

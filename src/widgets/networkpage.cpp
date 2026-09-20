@@ -30,6 +30,7 @@
 #include "launcherwindow.h"
 #include "networkpage.h"
 #include "widgets/themedata.h"
+#include <d_main.h>
 
 constexpr double EditHeight = 24.0;
 
@@ -461,12 +462,14 @@ void JoinSubPage::SetValues(FStartupSelectionInfo &info) const
 
 	// info.AdditionalNetArgs = "";
 	// info.AdditionalNetArgs.AppendFormat(" -join %s", addr.GetChars());
+	if (steam_enabled)
+	{
+		CSteamID lobbyID = SteamMatchmaking()->GetLobbyByIndex(LobbyList->GetSelectedItem());
 
-	CSteamID lobbyID = SteamMatchmaking()->GetLobbyByIndex(LobbyList->GetSelectedItem());
+		const char *ownerID = SteamMatchmaking()->GetLobbyData(lobbyID, "owner_id");
 
-	const char *ownerID = SteamMatchmaking()->GetLobbyData(lobbyID, "owner_id");
-
-	info.AdditionalNetArgs.AppendFormat(" -join %s", ownerID);
+		info.AdditionalNetArgs.AppendFormat(" -join %s", ownerID);
+	}
 }
 
 void JoinSubPage::UpdateLanguage()

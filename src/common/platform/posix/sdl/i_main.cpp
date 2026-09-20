@@ -31,8 +31,8 @@
 #include <new>
 #include <signal.h>
 #include <sys/param.h>
-#include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include <sys/utsname.h>
 #include <unistd.h>
 
@@ -52,14 +52,14 @@
 
 // EXTERNAL FUNCTION PROTOTYPES --------------------------------------------
 
-extern "C" int cc_install_handlers(int, char**, int, int*, const char*, int(*)(char*, char*));
+extern "C" int cc_install_handlers(int, char **, int, int *, const char *, int (*)(char *, char *));
 
 #ifdef __APPLE__
-void Mac_I_FatalError(const char* errortext);
+void Mac_I_FatalError(const char *errortext);
 #endif
 
 #ifdef __linux__
-void Linux_I_FatalError(const char* errortext);
+void Linux_I_FatalError(const char *errortext);
 
 static void Linux_I_TryRestart(char **argv)
 {
@@ -90,14 +90,14 @@ static void I_TryRestart(char **argv)
 bool SDL_I_CheckForRestart(void);
 
 // PUBLIC FUNCTION PROTOTYPES ----------------------------------------------
-int GameMain();
+int  GameMain();
 void SignalHandler(int signal);
 
 // PRIVATE FUNCTION PROTOTYPES ---------------------------------------------
 
 // EXTERNAL DATA DECLARATIONS ----------------------------------------------
 
-extern const char * const BACKEND = "SDL2";
+extern const char *const BACKEND = "SDL2";
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 FString sys_ostype;
@@ -105,16 +105,16 @@ FString sys_ostype;
 // The command line arguments.
 FArgs *Args;
 
-// PRIVATE DATA DEFINITIONS ------------------------------------------------
+bool steam_enabled = false;
 
+// PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 // CODE --------------------------------------------------------------------
 
-
-
-static int GetCrashInfo (char *buffer, char *end)
+static int GetCrashInfo(char *buffer, char *end)
 {
-	if (sysCallbacks.CrashInfo) sysCallbacks.CrashInfo(buffer, end - buffer, "\n");
+	if (sysCallbacks.CrashInfo)
+		sysCallbacks.CrashInfo(buffer, end - buffer, "\n");
 	return strlen(buffer);
 }
 
@@ -147,7 +147,7 @@ FString I_DetectOS()
 		if (length > 1)
 		{
 			distribution[length - 1] = '\0';
-			operatingSystem = distribution;
+			operatingSystem          = distribution;
 		}
 
 		pclose(proc);
@@ -158,8 +158,9 @@ FString I_DetectOS()
 
 	if (uname(&unameInfo) == 0)
 	{
-		const char* const separator = operatingSystem.Len() > 0 ? ", " : "";
-		operatingSystem.AppendFormat("%s%s %s on %s", separator, unameInfo.sysname, unameInfo.release, unameInfo.machine);
+		const char *const separator = operatingSystem.Len() > 0 ? ", " : "";
+		operatingSystem.AppendFormat("%s%s %s on %s", separator, unameInfo.sysname, unameInfo.release,
+		                             unameInfo.machine);
 		sys_ostype.Format("%s %s on %s", unameInfo.sysname, unameInfo.release, unameInfo.machine);
 	}
 
@@ -171,46 +172,49 @@ FString I_DetectOS()
 
 void I_StartupJoysticks();
 
-#define SDL_SETENV(k, v)                                           \
-	do {                                                           \
-		auto old = SDL_getenv(k);                                  \
-		if (old) DEBUG_LOG("%s already set as '%s'", k, old);      \
-		if (SDL_setenv(k, v, 0)) DEBUG_LOG("Failed to set %s", k); \
+#define SDL_SETENV(k, v)                                                                                               \
+	do                                                                                                                 \
+	{                                                                                                                  \
+		auto old = SDL_getenv(k);                                                                                      \
+		if (old)                                                                                                       \
+			DEBUG_LOG("%s already set as '%s'", k, old);                                                               \
+		if (SDL_setenv(k, v, 0))                                                                                       \
+			DEBUG_LOG("Failed to set %s", k);                                                                          \
 	} while (0);
 
-int main (int argc, char **argv)
+int main(int argc, char **argv)
 {
-#if !defined (__APPLE__)
-	{
-		int s[4] = { SIGSEGV, SIGILL, SIGFPE, SIGBUS };
-		cc_install_handlers(argc, argv, 4, s, GAMENAMELOWERCASE "-crash.log", GetCrashInfo);
-	}
-#endif // !__APPLE__
+	// #if !defined (__APPLE__)
+	// 	{
+	// 		int s[4] = { SIGSEGV, SIGILL, SIGFPE, SIGBUS };
+	// 		cc_install_handlers(argc, argv, 4, s, GAMENAMELOWERCASE "-crash.log", GetCrashInfo);
+	// 	}
+	// #endif // !__APPLE__
 
 	signal(SIGINT, SignalHandler);
 	signal(SIGTERM, SignalHandler);
 	// signal(SIGHUP, SignalHandler);
 	// signal(SIGQUIT, SignalHandler);
 
-	seteuid (getuid ());
+	seteuid(getuid());
 	// Set LC_NUMERIC environment variable in case some library decides to
 	// clear the setlocale call at least this will be correct.
 	// Note that the LANG environment variable is overridden by LC_*
-	setenv ("LC_NUMERIC", "C", 1);
+	setenv("LC_NUMERIC", "C", 1);
 
-	setlocale (LC_ALL, "C");
+	setlocale(LC_ALL, "C");
 
-/* currently this is causing issues in the appimage build
-#ifdef __linux
-	SDL_SETENV("SDL_VIDEODRIVER", "wayland,x11");
-#endif
-*/
+	/* currently this is causing issues in the appimage build
+	#ifdef __linux
+	    SDL_SETENV("SDL_VIDEODRIVER", "wayland,x11");
+	#endif
+	*/
 
 	// despite the name, this also sets the wayland app_id
 	SDL_SETENV("SDL_VIDEO_X11_WMCLASS", APPID);
-	if (SDL_Init (0) < 0)
+	if (SDL_Init(0) < 0)
 	{
-		fprintf (stderr, "Could not initialize SDL:\n%s\n", SDL_GetError());
+		fprintf(stderr, "Could not initialize SDL:\n%s\n", SDL_GetError());
 		return -1;
 	}
 
@@ -220,13 +224,13 @@ int main (int argc, char **argv)
 	progdir = PROGDIR;
 #else
 	char program[PATH_MAX];
-	if (realpath (argv[0], program) == NULL)
-		strcpy (program, argv[0]);
-	char *slash = strrchr (program, '/');
+	if (realpath(argv[0], program) == NULL)
+		strcpy(program, argv[0]);
+	char *slash = strrchr(program, '/');
 	if (slash != NULL)
 	{
 		*(slash + 1) = '\0';
-		progdir = program;
+		progdir      = program;
 	}
 	else
 	{
