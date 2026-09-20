@@ -27,12 +27,13 @@
 #include <string.h>
 
 /* [Petteri] Use Winsock if compiling for Win32: */
-// #ifdef _WIN32
-// #define WIN32_LEAN_AND_MEAN
-// #define NOMINMAX
-// #include <windows.h>
-// #include <winsock.h>
-#ifndef _WIN32
+/* [Petteri] Use Winsock if compiling for Win32: */
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
+#include <windows.h>
+#include <winsock.h>
+#else
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netdb.h>
@@ -63,22 +64,16 @@
 #include "base64.h"
 
 /* [Petteri] Get more portable: */
-#ifdef _WIN32
-#define WIN32_LEAN_AND_MEAN
-#define NOMINMAX
-#include <windows.h>
-#include <winsock.h>
-#else
-#include <arpa/inet.h>
-#include <errno.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <sys/ioctl.h>
-#include <sys/socket.h>
-#include <unistd.h>
-#ifdef __sun
-#include <fcntl.h>
-#endif
+#ifndef _WIN32
+typedef int SOCKET;
+#define SOCKET_ERROR      -1
+#define INVALID_SOCKET    -1
+#define closesocket       close
+#define ioctlsocket       ioctl
+#define Sleep(x)          usleep(x * 1000)
+#define WSAEWOULDBLOCK    EWOULDBLOCK
+#define WSAECONNRESET     ECONNRESET
+#define WSAGetLastError() errno
 #endif
 
 #ifndef IPPORT_USERRESERVED
@@ -1558,9 +1553,13 @@ CallbackHandler handler;
 void CallbackHandler::OnLobbyCreated(LobbyCreated_t *cb)
 {
 	uint64_t steamID = SteamUser()->GetSteamID().ConvertToUint64();
-	char ownerID[32];
+	char     ownerID[32];
+#ifdef _WIN32
 	snprintf(ownerID, 32, "%I64u", steamID);
-	Printf("Started a steam lobby with id: %lld\n", cb->m_ulSteamIDLobby);
+#else
+	snprintf(ownerID, 32, "%llu", steamID);
+#endif
+	Printf("Started a steam lobby with id: %llu\n", cb->m_ulSteamIDLobby);
 	SteamMatchmaking()->SetLobbyData(cb->m_ulSteamIDLobby, "amydoomowner", SteamFriends()->GetPersonaName());
 	SteamMatchmaking()->SetLobbyData(cb->m_ulSteamIDLobby, "owner_id", ownerID);
 }
