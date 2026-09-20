@@ -141,8 +141,10 @@ void NetworkPage::SetValues(FStartupSelectionInfo &info) const
 	info.bHosting       = IsInHost();
 	info.DefaultNetPage = info.bHosting ? 0 : 1;
 
-	HostPage->SetValues(info);
-	JoinPage->SetValues(info);
+	if (info.bHosting)
+		HostPage->SetValues(info);
+	if (info.bNetStart && !info.bHosting)
+		JoinPage->SetValues(info);
 
 	info.bSaveNetFile       = SaveFileCheckbox->GetChecked();
 	info.bSaveNetArgs       = SaveParametersCheckbox->GetChecked();
