@@ -891,20 +891,36 @@ void Win32DisplayWindow::ProcessEvents()
 			break;
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
-		
 	}
+
+	// Ensure Steam API callbacks are processed when pumping messages.
+	SteamAPI_RunCallbacks();
 }
 
 void Win32DisplayWindow::RunLoop()
 {
+	// Use a PeekMessage-based loop so we can run Steam callbacks every frame
+	// even when there are no window messages. Sleep briefly to avoid busy-waiting.
 	while (!ExitRunLoop && !Windows.empty())
 	{
 		MSG msg = {};
-		if (GetMessage(&msg, 0, 0, 0) <= 0)
-			break;
-		TranslateMessage(&msg);
-		DispatchMessage(&msg);
+		while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE) > 0)
+		{
+			if (msg.message == WM_QUIT)
+			{
+				ExitRunLoop = false;
+				return;
+			}
+			TranslateMessage(&msg);
+			DispatchMessage(&msg);
+		}
+
+		// Run Steam callbacks each frame and log for confirmation.
 		SteamAPI_RunCallbacks();
+		// printf("SteamAPI_RunCallbacks called\n");
+
+		// Yield CPU briefly to avoid spinning too hard.
+		Sleep(1);
 	}
 	ExitRunLoop = false;
 }
