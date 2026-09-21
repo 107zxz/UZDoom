@@ -395,7 +395,6 @@ extern FName                            MessageBoxClass;
 
 bool steam_enabled = false;
 
-
 CUSTOM_CVAR(Float, i_timescale, 1.0f, CVAR_NOINITCALL | CVAR_VIRTUAL)
 {
 	if (netgame)
@@ -4367,7 +4366,7 @@ void SignalHandler(int signal)
 int GameMain()
 {
 	// Steam init
-	if (SteamAPI_RestartAppIfNecessary(480))
+	if (SteamAPI_RestartAppIfNecessary(4942300))
 		exit(1);
 
 	if (SteamAPI_Init())
