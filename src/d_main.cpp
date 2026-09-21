@@ -4366,7 +4366,8 @@ void SignalHandler(int signal)
 int GameMain()
 {
 	// Steam init
-	if (SteamAPI_RestartAppIfNecessary(4942300))
+	// if (SteamAPI_RestartAppIfNecessary(4942300))
+	if (SteamAPI_RestartAppIfNecessary(480))
 		exit(1);
 
 	if (SteamAPI_Init())
