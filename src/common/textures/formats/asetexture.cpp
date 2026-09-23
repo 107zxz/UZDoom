@@ -196,10 +196,10 @@ FImageSource *ASEImage_TryCreate(FileReader &data, int lumpnum)
 
 FASETexture::~FASETexture()
 {
-	for (int i = 0; i < NumOfFrames; i++)
-		delete[] framesData[i];
+	// for (int i = 0; i < NumOfFrames; i++)
+	// 	delete[] framesData[i];
 
-	delete[] framesData;
+	// delete[] framesData;
 }
 
 FASETexture::FASETexture(FileReader &lump, int lumpnum, int width, int height, int nFrames, uint8_t **frames)
