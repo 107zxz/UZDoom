@@ -31,7 +31,8 @@
 #include "tarray.h"
 
 union CubicBezier {
-	struct {
+	struct
+	{
 		float x1;
 		float y1;
 		float x2;
@@ -40,7 +41,8 @@ union CubicBezier {
 	float pts[4];
 };
 
-enum EJoyCurve {
+enum EJoyCurve
+{
 	JOYCURVE_CUSTOM = -1,
 	JOYCURVE_DEFAULT,
 	JOYCURVE_LINEAR,
@@ -69,45 +71,45 @@ struct IJoystickConfig
 {
 	virtual ~IJoystickConfig() = 0;
 
-	virtual FString GetName() = 0;
-	virtual float GetSensitivity() = 0;
-	virtual void SetSensitivity(float scale) = 0;
+	virtual FString GetName()                   = 0;
+	virtual float   GetSensitivity()            = 0;
+	virtual void    SetSensitivity(float scale) = 0;
 
-	virtual bool HasHaptics() = 0;
-	virtual float GetHapticsStrength() = 0;
-	virtual void SetHapticsStrength(float strength) = 0;
+	virtual bool  HasHaptics()                       = 0;
+	virtual float GetHapticsStrength()               = 0;
+	virtual void  SetHapticsStrength(float strength) = 0;
 
-	virtual int GetNumAxes() = 0;
-	virtual float GetAxisDeadZone(int axis) = 0;
-	virtual const char *GetAxisName(int axis) = 0;
-	virtual float GetAxisScale(int axis) = 0;
-	virtual float GetAxisDigitalThreshold(int axis) = 0;
-	virtual EJoyCurve GetAxisResponseCurve(int axis) = 0;
-	virtual float GetAxisResponseCurvePoint(int axis, int point) = 0;
+	virtual int         GetNumAxes()                                   = 0;
+	virtual float       GetAxisDeadZone(int axis)                      = 0;
+	virtual const char *GetAxisName(int axis)                          = 0;
+	virtual float       GetAxisScale(int axis)                         = 0;
+	virtual float       GetAxisDigitalThreshold(int axis)              = 0;
+	virtual EJoyCurve   GetAxisResponseCurve(int axis)                 = 0;
+	virtual float       GetAxisResponseCurvePoint(int axis, int point) = 0;
 
-	virtual void SetAxisDeadZone(int axis, float zone) = 0;
-	virtual void SetAxisScale(int axis, float scale) = 0;
-	virtual void SetAxisDigitalThreshold(int axis, float threshold) = 0;
-	virtual void SetAxisResponseCurve(int axis, EJoyCurve preset) = 0;
+	virtual void SetAxisDeadZone(int axis, float zone)                       = 0;
+	virtual void SetAxisScale(int axis, float scale)                         = 0;
+	virtual void SetAxisDigitalThreshold(int axis, float threshold)          = 0;
+	virtual void SetAxisResponseCurve(int axis, EJoyCurve preset)            = 0;
 	virtual void SetAxisResponseCurvePoint(int axis, int point, float value) = 0;
 
-	virtual bool GetEnabled() = 0;
+	virtual bool GetEnabled()             = 0;
 	virtual void SetEnabled(bool enabled) = 0;
 
-	virtual bool AllowsEnabledInBackground() = 0;
-	virtual bool GetEnabledInBackground() = 0;
+	virtual bool AllowsEnabledInBackground()          = 0;
+	virtual bool GetEnabledInBackground()             = 0;
 	virtual void SetEnabledInBackground(bool enabled) = 0;
 
 	// Used by the saver to not save properties that are at their defaults.
-	virtual bool IsSensitivityDefault() = 0;
-	virtual bool IsHapticsStrengthDefault() = 0;
-	virtual bool IsAxisDeadZoneDefault(int axis) = 0;
-	virtual bool IsAxisScaleDefault(int axis) = 0;
+	virtual bool IsSensitivityDefault()                  = 0;
+	virtual bool IsHapticsStrengthDefault()              = 0;
+	virtual bool IsAxisDeadZoneDefault(int axis)         = 0;
+	virtual bool IsAxisScaleDefault(int axis)            = 0;
 	virtual bool IsAxisDigitalThresholdDefault(int axis) = 0;
-	virtual bool IsAxisResponseCurveDefault(int axis) = 0;
+	virtual bool IsAxisResponseCurveDefault(int axis)    = 0;
 
-	virtual void SetDefaultConfig() = 0;
-	virtual FString GetIdentifier() = 0;
+	virtual void    SetDefaultConfig() = 0;
+	virtual FString GetIdentifier()    = 0;
 
 	void Reset()
 	{
@@ -126,19 +128,20 @@ void M_SaveJoystickConfig(IJoystickConfig *joy);
 
 void Joy_GenerateButtonEvent(bool down, EKeyCodes which);
 void Joy_GenerateButtonEvents(int oldbuttons, int newbuttons, int numbuttons, int base);
+void Joy_GenerateButtonEvents(int oldbuttons, int newbuttons, int numbuttons, int DeviceIndex);
 void Joy_GenerateButtonEvents(int oldbuttons, int newbuttons, int numbuttons, const int *keys);
 
 double Joy_ApplyResponseCurveBezier(const CubicBezier &curve, double input);
-double Joy_ManageSingleAxis(double axisval, double deadzone, double threshold, const CubicBezier &curve, uint8_t *buttons);
-int Joy_XYAxesToButtons(double x, double y);
-bool Joy_ManageThumbstick(double *axis_x, double *axis_y, double deadzone_x, double deadzone_y,
-	double threshold_x, double threshold_y, const CubicBezier &curve_x, const CubicBezier &curve_y, uint8_t *buttons);
-
+double Joy_ManageSingleAxis(double axisval, double deadzone, double threshold, const CubicBezier &curve,
+                            uint8_t *buttons);
+int    Joy_XYAxesToButtons(double x, double y);
+bool Joy_ManageThumbstick(double *axis_x, double *axis_y, double deadzone_x, double deadzone_y, double threshold_x,
+                          double threshold_y, const CubicBezier &curve_x, const CubicBezier &curve_y, uint8_t *buttons);
 
 // These ought to be provided by a system-specific i_input.cpp.
-void I_GetAxes(float axes[NUM_AXIS_CODES]);
-void I_GetJoysticks(TArray<IJoystickConfig *> &sticks);
+void             I_GetAxes(float axes[NUM_AXIS_CODES]);
+void             I_GetJoysticks(TArray<IJoystickConfig *> &sticks);
 IJoystickConfig *I_UpdateDeviceList();
-extern void UpdateJoystickMenu(IJoystickConfig *);
+extern void      UpdateJoystickMenu(IJoystickConfig *);
 
 #endif

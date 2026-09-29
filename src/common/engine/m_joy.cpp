@@ -77,7 +77,8 @@ extern const CubicBezier JOYCURVE[NUM_JOYCURVE] = {
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-CUSTOM_CVARD(Bool, use_joystick, true, CVAR_ARCHIVE|CVAR_GLOBALCONFIG|CVAR_NOINITCALL, "enables input from the joystick if it is present")
+CUSTOM_CVARD(Bool, use_joystick, true, CVAR_ARCHIVE | CVAR_GLOBALCONFIG | CVAR_NOINITCALL,
+             "enables input from the joystick if it is present")
 {
 #ifdef _WIN32
 	joy_ps2raw->Callback();
@@ -87,15 +88,15 @@ CUSTOM_CVARD(Bool, use_joystick, true, CVAR_ARCHIVE|CVAR_GLOBALCONFIG|CVAR_NOINI
 }
 
 FARG(nojoy, "Configuration", "Disables joystick support.", "",
-	"Disables joystick support. If you have an old-fashioned gameport (non-USB) device attached,"
-	" it can slow down the game even if you do not intend to use it. Use -nojoy to avoid the"
-	" slowdown that comes from polling it for input. Only the Windows version supports a"
-	" joystick.");
+     "Disables joystick support. If you have an old-fashioned gameport (non-USB) device attached,"
+     " it can slow down the game even if you do not intend to use it. Use -nojoy to avoid the"
+     " slowdown that comes from polling it for input. Only the Windows version supports a"
+     " joystick.");
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
 // Bits 0 is X+, 1 is X-, 2 is Y+, and 3 is Y-.
-static uint8_t JoyAngleButtons[8] = { 1, 1+4, 4, 2+4, 2, 2+8, 8, 1+8 };
+static uint8_t JoyAngleButtons[8] = {1, 1 + 4, 4, 2 + 4, 2, 2 + 8, 8, 1 + 8};
 
 // CODE --------------------------------------------------------------------
 
@@ -117,11 +118,12 @@ IJoystickConfig::~IJoystickConfig()
 //
 //==========================================================================
 
-static bool M_SetJoystickConfigSection(IJoystickConfig *joy, bool create, FConfigFile* GameConfig)
+static bool M_SetJoystickConfigSection(IJoystickConfig *joy, bool create, FConfigFile *GameConfig)
 {
 	FString id = "Joy:";
 	id += joy->GetIdentifier();
-	if (!GameConfig) return false;
+	if (!GameConfig)
+		return false;
 	return GameConfig->SetSection(id.GetChars(), create);
 }
 
@@ -133,11 +135,11 @@ static bool M_SetJoystickConfigSection(IJoystickConfig *joy, bool create, FConfi
 
 bool M_LoadJoystickConfig(IJoystickConfig *joy)
 {
-	FConfigFile* GameConfig = sysCallbacks.GetConfig ? sysCallbacks.GetConfig() : nullptr;
-	char key[32];
-	const char *value;
-	int axislen;
-	int numaxes;
+	FConfigFile *GameConfig = sysCallbacks.GetConfig ? sysCallbacks.GetConfig() : nullptr;
+	char         key[32];
+	const char  *value;
+	int          axislen;
+	int          numaxes;
 
 	joy->SetDefaultConfig();
 	if (!M_SetJoystickConfigSection(joy, false, GameConfig))
@@ -153,7 +155,7 @@ bool M_LoadJoystickConfig(IJoystickConfig *joy)
 		joy->SetEnabled((bool)atoi(value));
 	}
 
-	if(joy->AllowsEnabledInBackground())
+	if (joy->AllowsEnabledInBackground())
 	{
 		value = GameConfig->GetValueForKey("EnabledInBackground");
 		if (value)
@@ -204,7 +206,7 @@ bool M_LoadJoystickConfig(IJoystickConfig *joy)
 		value = GameConfig->GetValueForKey(key);
 		if (value)
 		{
-			joy->SetAxisResponseCurve(i, (EJoyCurve)clamp(atoi(value), (int)JOYCURVE_CUSTOM, (int)NUM_JOYCURVE-1));
+			joy->SetAxisResponseCurve(i, (EJoyCurve)clamp(atoi(value), (int)JOYCURVE_CUSTOM, (int)NUM_JOYCURVE - 1));
 		}
 
 		mysnprintf(key + axislen, countof(key) - axislen, "curve-x1");
@@ -248,9 +250,9 @@ bool M_LoadJoystickConfig(IJoystickConfig *joy)
 
 void M_SaveJoystickConfig(IJoystickConfig *joy)
 {
-	FConfigFile* GameConfig = sysCallbacks.GetConfig ? sysCallbacks.GetConfig() : nullptr;
-	char key[32], value[32];
-	int axislen, numaxes;
+	FConfigFile *GameConfig = sysCallbacks.GetConfig ? sysCallbacks.GetConfig() : nullptr;
+	char         key[32], value[32];
+	int          axislen, numaxes;
 
 	if (GameConfig != NULL && M_SetJoystickConfigSection(joy, true, GameConfig))
 	{
@@ -331,33 +333,30 @@ void M_SaveJoystickConfig(IJoystickConfig *joy)
 	}
 }
 
-CCMD (gamepad)
+CCMD(gamepad)
 {
 	int COMMAND = 1, IDENTIFIER = 2, VALUE = 3;
-	int argc = argv.argc()-1;
+	int argc = argv.argc() - 1;
 
 	TArray<IJoystickConfig *> sticks;
 	I_GetJoysticks(sticks);
 
-	auto usage = []()
-	{
-		Printf(
-			"usage:"
-			"\n\tgamepad list"
-			"\n\tgamepad reset       pad"
-			"\n\tgamepad enabled     pad      [0|1]"
-			"\n\tgamepad background  pad      [0|1]"
-			"\n\tgamepad sensitivity pad      [float]"
-			"\n\tgamepad deadzone    pad.axis [float]"
-			"\n\tgamepad scale       pad.axis [float]"
-			"\n\tgamepad threshold   pad.axis [float]"
-			"\n\tgamepad curve       pad.axis [-1|0|1|2|3]"
-			"\n\tgamepad curve-x1    pad.axis [float]"
-			"\n\tgamepad curve-y1    pad.axis [float]"
-			"\n\tgamepad curve-x2    pad.axis [float]"
-			"\n\tgamepad curve-y2    pad.axis [float]"
-			"\n"
-		);
+	auto usage = []() {
+		Printf("usage:"
+		       "\n\tgamepad list"
+		       "\n\tgamepad reset       pad"
+		       "\n\tgamepad enabled     pad      [0|1]"
+		       "\n\tgamepad background  pad      [0|1]"
+		       "\n\tgamepad sensitivity pad      [float]"
+		       "\n\tgamepad deadzone    pad.axis [float]"
+		       "\n\tgamepad scale       pad.axis [float]"
+		       "\n\tgamepad threshold   pad.axis [float]"
+		       "\n\tgamepad curve       pad.axis [-1|0|1|2|3]"
+		       "\n\tgamepad curve-x1    pad.axis [float]"
+		       "\n\tgamepad curve-y1    pad.axis [float]"
+		       "\n\tgamepad curve-x2    pad.axis [float]"
+		       "\n\tgamepad curve-y2    pad.axis [float]"
+		       "\n");
 	};
 
 	if (argc < COMMAND)
@@ -384,108 +383,129 @@ CCMD (gamepad)
 		return usage();
 	}
 
-	const char * id = argv[IDENTIFIER];
-	const char * hasAxis = strchr(id, '.');
+	const char *id      = argv[IDENTIFIER];
+	const char *hasAxis = strchr(id, '.');
 
 	int pad, axis;
 
-	try {
+	try
+	{
 		pad = (int)std::stod(id);
 
 		if (pad < 0 || pad >= sticks.SSize())
 		{
-			return (void) Printf("Pad # out of range\n");
+			return (void)Printf("Pad # out of range\n");
 		}
-	} catch (...) {
-		return (void) Printf("Failed to parse pad #\n");
+	}
+	catch (...)
+	{
+		return (void)Printf("Failed to parse pad #\n");
 	}
 
 	if (hasAxis)
 	{
-		try {
-			axis = (int)std::stod(hasAxis+1);
+		try
+		{
+			axis = (int)std::stod(hasAxis + 1);
 
 			if (axis < 0 || axis >= sticks[pad]->GetNumAxes())
 			{
-				return (void) Printf("Axis # out of range\n");
+				return (void)Printf("Axis # out of range\n");
 			}
-		} catch (...) {
-			return (void) Printf("Failed to parse axis #\n");
+		}
+		catch (...)
+		{
+			return (void)Printf("Failed to parse axis #\n");
 		}
 	}
 
 	float value = 0;
-	bool set = argc >= VALUE;
+	bool  set   = argc >= VALUE;
 
 	if (set)
 	{
-		try {
+		try
+		{
 			value = static_cast<float>(std::stod(argv[VALUE]));
-		} catch (...) {
-			return (void) Printf("Failed to parse args\n");
+		}
+		catch (...)
+		{
+			return (void)Printf("Failed to parse args\n");
 		}
 	}
 
 	if (command == "reset")
 	{
-		if (set) return usage();
+		if (set)
+			return usage();
 		sticks[pad]->Reset();
 		return;
 	}
 	if (command == "enabled")
 	{
-		if (set) sticks[pad]->SetEnabled((int)value);
-		return (void) Printf("%d\n", sticks[pad]->GetEnabled());
+		if (set)
+			sticks[pad]->SetEnabled((int)value);
+		return (void)Printf("%d\n", sticks[pad]->GetEnabled());
 	}
 	if (command == "background")
 	{
-		if (set) sticks[pad]->SetEnabledInBackground((int)value);
-		return (void) Printf("%d\n", sticks[pad]->GetEnabledInBackground());
+		if (set)
+			sticks[pad]->SetEnabledInBackground((int)value);
+		return (void)Printf("%d\n", sticks[pad]->GetEnabledInBackground());
 	}
 	if (command == "sensitivity")
 	{
-		if (set) sticks[pad]->SetSensitivity(value);
-		return (void) Printf("%g\n", sticks[pad]->GetSensitivity());
+		if (set)
+			sticks[pad]->SetSensitivity(value);
+		return (void)Printf("%g\n", sticks[pad]->GetSensitivity());
 	}
 	if (command == "deadzone")
 	{
-		if (set) sticks[pad]->SetAxisDeadZone(axis, value);
-		return (void) Printf("%g\n", sticks[pad]->GetAxisDeadZone(axis));
+		if (set)
+			sticks[pad]->SetAxisDeadZone(axis, value);
+		return (void)Printf("%g\n", sticks[pad]->GetAxisDeadZone(axis));
 	}
 	if (command == "scale")
 	{
-		if (set) sticks[pad]->SetAxisScale(axis, value);
-		return (void) Printf("%g\n", sticks[pad]->GetAxisScale(axis));
+		if (set)
+			sticks[pad]->SetAxisScale(axis, value);
+		return (void)Printf("%g\n", sticks[pad]->GetAxisScale(axis));
 	}
 	if (command == "threshold")
 	{
-		if (set) sticks[pad]->SetAxisDigitalThreshold(axis, value);
-		return (void) Printf("%g\n", sticks[pad]->GetAxisDigitalThreshold(axis));
+		if (set)
+			sticks[pad]->SetAxisDigitalThreshold(axis, value);
+		return (void)Printf("%g\n", sticks[pad]->GetAxisDigitalThreshold(axis));
 	}
 	if (command == "curve")
 	{
-		if (set) sticks[pad]->SetAxisResponseCurve(axis, (EJoyCurve)value);
-		return (void) Printf("%d\n", sticks[pad]->GetAxisResponseCurve(axis));
+		if (set)
+			sticks[pad]->SetAxisResponseCurve(axis, (EJoyCurve)value);
+		return (void)Printf("%d\n", sticks[pad]->GetAxisResponseCurve(axis));
 	}
 	if (command == "curve-x1")
 	{
-		if (set) sticks[pad]->SetAxisResponseCurvePoint(axis, 0, value);
-		return (void) Printf("%g\n", sticks[pad]->GetAxisResponseCurvePoint(axis, 0));
+		if (set)
+			sticks[pad]->SetAxisResponseCurvePoint(axis, 0, value);
+		return (void)Printf("%g\n", sticks[pad]->GetAxisResponseCurvePoint(axis, 0));
 	}
 	if (command == "curve-y1")
 	{
-		if (set) sticks[pad]->SetAxisResponseCurvePoint(axis, 1, value);
-		return (void) Printf("%g\n", sticks[pad]->GetAxisResponseCurvePoint(axis, 1));
+		if (set)
+			sticks[pad]->SetAxisResponseCurvePoint(axis, 1, value);
+		return (void)Printf("%g\n", sticks[pad]->GetAxisResponseCurvePoint(axis, 1));
 	}
 	if (command == "curve-x2")
 	{
-		if (set) sticks[pad]->SetAxisResponseCurvePoint(axis, 2, value);
-		return (void) Printf("%g\n", sticks[pad]->GetAxisResponseCurvePoint(axis, 2));
+		if (set)
+			sticks[pad]->SetAxisResponseCurvePoint(axis, 2, value);
+		return (void)Printf("%g\n", sticks[pad]->GetAxisResponseCurvePoint(axis, 2));
 	}
 	if (command == "curve-y2")
 	{
-		if (set) sticks[pad]->SetAxisResponseCurvePoint(axis, 3, value);
-		return (void) Printf("%g\n", sticks[pad]->GetAxisResponseCurvePoint(axis, 3));
+		if (set)
+			sticks[pad]->SetAxisResponseCurvePoint(axis, 3, value);
+		return (void)Printf("%g\n", sticks[pad]->GetAxisResponseCurvePoint(axis, 3));
 	}
 
 	return usage();
@@ -504,33 +524,36 @@ CCMD (gamepad)
 double Joy_ApplyResponseCurveBezier(const CubicBezier &curve, double input)
 {
 	// clamp + trivial cases
-	if (input == 0) return 0;
-	double sign = (input >= 0)? 1.0: -1.0;
-	input = abs(input);
-	input = (input > 1.0)? 1.0: input;
-	if (input == 1.0) return sign*input;
+	if (input == 0)
+		return 0;
+	double sign = (input >= 0) ? 1.0 : -1.0;
+	input       = abs(input);
+	input       = (input > 1.0) ? 1.0 : input;
+	if (input == 1.0)
+		return sign * input;
 
-	double t = input, T;
-	float x1 = curve.x1, y1 = curve.y1, x2 = curve.x2, y2 = curve.y2;
+	double t  = input, T;
+	float  x1 = curve.x1, y1 = curve.y1, x2 = curve.x2, y2 = curve.y2;
 
 	const int max_iter = 4;
 	for (auto i = 0; i < max_iter; i++)
 	{
-		T = 1-t;
+		T = 1 - t;
 
-		double x = 3*T*T*t*x1 + 3*T*t*t*x2 + t*t*t;
-		double dx = 3*T*T*x1 + 6*T*t*(x2-x1) + 3*t*t*(1-x2);
+		double x  = 3 * T * T * t * x1 + 3 * T * t * t * x2 + t * t * t;
+		double dx = 3 * T * T * x1 + 6 * T * t * (x2 - x1) + 3 * t * t * (1 - x2);
 
 		// no div by 0
-		if (abs(dx) < 0.00001) break;
+		if (abs(dx) < 0.00001)
+			break;
 
-		t = clamp(t - (x-input)/dx, 0.0, 1.0);
+		t = clamp(t - (x - input) / dx, 0.0, 1.0);
 	}
 
-	T = 1-t;
-	t = 3*T*T*t*y1 + 3*T*t*t*y2 + t*t*t;
+	T = 1 - t;
+	t = 3 * T * T * t * y1 + 3 * T * t * t * y2 + t * t * t;
 
-	return sign*t;
+	return sign * t;
 }
 
 //===========================================================================
@@ -539,7 +562,8 @@ double Joy_ApplyResponseCurveBezier(const CubicBezier &curve, double input)
 //
 //===========================================================================
 
-double Joy_ManageSingleAxis(double axisval, double deadzone, double threshold, const CubicBezier &curve, uint8_t *buttons)
+double Joy_ManageSingleAxis(double axisval, double deadzone, double threshold, const CubicBezier &curve,
+                            uint8_t *buttons)
 {
 	uint8_t butt;
 
@@ -547,7 +571,7 @@ double Joy_ManageSingleAxis(double axisval, double deadzone, double threshold, c
 	if (fabs(axisval) < deadzone)
 	{
 		axisval = 0;
-		butt = 0;
+		butt    = 0;
 	}
 	else
 	{
@@ -555,12 +579,12 @@ double Joy_ManageSingleAxis(double axisval, double deadzone, double threshold, c
 		if (axisval < 0)
 		{
 			axisval = (axisval + deadzone) / (1.0 - deadzone);
-			butt = 2;	// button minus
+			butt    = 2; // button minus
 		}
 		else
 		{
 			axisval = (axisval - deadzone) / (1.0 - deadzone);
-			butt = 1;	// button plus
+			butt    = 1; // button plus
 		}
 
 		// Apply input response curve
@@ -607,14 +631,14 @@ int Joy_XYAxesToButtons(double x, double y)
 	double rad = atan2(y, x);
 	if (rad < 0)
 	{
-		rad += 2*pi::pi();
+		rad += 2 * pi::pi();
 	}
 	// The circle is divided into eight segments for corresponding
 	// button combinations. Each segment is pi/4 radians wide. We offset
 	// by half this so that the segments are centered around the ideal lines
 	// their buttons represent instead of being right on the lines.
-	rad += pi::pi()/8;		// Offset
-	rad *= 4/pi::pi();		// Convert range from [0,2pi) to [0,8)
+	rad += pi::pi() / 8; // Offset
+	rad *= 4 / pi::pi(); // Convert range from [0,2pi) to [0,8)
 	return JoyAngleButtons[int(rad) & 7];
 }
 
@@ -632,12 +656,8 @@ int Joy_XYAxesToButtons(double x, double y)
 //
 //===========================================================================
 
-bool Joy_ManageThumbstick(
-	double *axis_x, double *axis_y,
-	double deadzone_x, double deadzone_y,
-	double threshold_x, double threshold_y,
-	const CubicBezier &curve_x, const CubicBezier &curve_y,
-	uint8_t *buttons)
+bool Joy_ManageThumbstick(double *axis_x, double *axis_y, double deadzone_x, double deadzone_y, double threshold_x,
+                          double threshold_y, const CubicBezier &curve_x, const CubicBezier &curve_y, uint8_t *buttons)
 {
 	double ret_x = *axis_x;
 	double ret_y = *axis_y;
@@ -647,13 +667,15 @@ bool Joy_ManageThumbstick(
 
 	const double magnitude = sqrt((x_abs * x_abs) + (y_abs * y_abs));
 
-	if (isnan(magnitude) || magnitude <= 0) {
+	if (isnan(magnitude) || magnitude <= 0)
+	{
 		*axis_x = *axis_y = 0;
-		if (buttons) *buttons = 0;
+		if (buttons)
+			*buttons = 0;
 		return false;
 	}
 
-	bool ret_value = true;
+	bool    ret_value   = true;
 	uint8_t ret_buttons = 0;
 
 	// 1 is pure X, 0 is pure Y
@@ -667,22 +689,25 @@ bool Joy_ManageThumbstick(
 
 	if (magnitude < deadzone)
 	{
-		ret_x = 0;
-		ret_y = 0;
+		ret_x     = 0;
+		ret_y     = 0;
 		ret_value = false;
 	}
 	else
 	{
 		// Make the dead zone the new 0.
 		double scaled = (magnitude - deadzone) / (1.0 - deadzone);
-		if (!isfinite(scaled)) scaled = 1.0;
+		if (!isfinite(scaled))
+			scaled = 1.0;
 
-		const CubicBezier curve = {{
-			(float)std::lerp((double) curve_y.x1, (double) curve_x.x1, x_bias),
-			(float)std::lerp((double) curve_y.y1, (double) curve_x.y1, x_bias),
-			(float)std::lerp((double) curve_y.x2, (double) curve_x.x2, x_bias),
-			(float)std::lerp((double) curve_y.y2, (double) curve_x.y2, x_bias),
-		}};
+		const CubicBezier curve = {
+			{
+			 (float)std::lerp((double)curve_y.x1, (double)curve_x.x1, x_bias),
+			 (float)std::lerp((double)curve_y.y1, (double)curve_x.y1, x_bias),
+			 (float)std::lerp((double)curve_y.x2, (double)curve_x.x2, x_bias),
+			 (float)std::lerp((double)curve_y.y2, (double)curve_x.y2, x_bias),
+			 }
+        };
 
 		scaled = Joy_ApplyResponseCurveBezier(curve, scaled);
 
@@ -699,7 +724,8 @@ bool Joy_ManageThumbstick(
 	*axis_x = ret_x;
 	*axis_y = ret_y;
 
-	if (buttons) *buttons = ret_buttons;
+	if (buttons)
+		*buttons = ret_buttons;
 
 	return ret_value;
 }
@@ -707,13 +733,13 @@ bool Joy_ManageThumbstick(
 #ifdef _DEBUG
 CCMD(debug_joystick_curves)
 {
-	constexpr auto radial_steps = 360;
+	constexpr auto radial_steps    = 360;
 	constexpr auto magnitude_steps = 100;
-	constexpr auto deadzone = 0.1;
-	constexpr auto threshold = 0.5;
+	constexpr auto deadzone        = 0.1;
+	constexpr auto threshold       = 0.5;
 
 	auto quad = [](double a) {
-		int q = (int)floor((a + M_PI/8.0) / (M_PI/4.0));
+		int q = (int)floor((a + M_PI / 8.0) / (M_PI / 4.0));
 		return (q + 8) % 8;
 	};
 
@@ -725,37 +751,36 @@ CCMD(debug_joystick_curves)
 	{
 		for (auto a = 0; a < radial_steps; a++)
 		{
-			int lq = -1;
+			int    lq = -1;
 			double lm = -1;
 
 			for (auto m = 0; m < magnitude_steps; m++)
 			{
-				double a1 = (a*M_PI*2.0)/radial_steps;
+				double a1 = (a * M_PI * 2.0) / radial_steps;
 				double m1 = m / (magnitude_steps - 1.0);
-				int q1 = quad(a1);
+				int    q1 = quad(a1);
 
 				double x1 = cos(a1) * m1;
 				double y1 = sin(a1) * m1;
 
-				double x2 = x1, y2 = y1;
+				double  x2 = x1, y2 = y1;
 				uint8_t buttons;
 
-				bool crossed = Joy_ManageThumbstick(
-					&x2, &y2,
-					deadzone, deadzone, threshold, threshold,
-					JOYCURVE[c], JOYCURVE[c],
-					&buttons
-				);
+				bool crossed = Joy_ManageThumbstick(&x2, &y2, deadzone, deadzone, threshold, threshold, JOYCURVE[c],
+				                                    JOYCURVE[c], &buttons);
 
 				double a2 = atan2(y2, x2);
-				if (a2 < 0) a2 += M_PI * 2;
-				double m2 = sqrt(x2*x2 + y2*y2);
-				int q2 = quad(a2);
+				if (a2 < 0)
+					a2 += M_PI * 2;
+				double m2 = sqrt(x2 * x2 + y2 * y2);
+				int    q2 = quad(a2);
 
 				Printf("a %0.2f m %0.2f x %0.2f y %0.2f q %d c %d\n", a1, m1, x1, y1, q1, c);
 
-				if (lq < 0) lq = q1;
-				if (lm < 0) lm = m2;
+				if (lq < 0)
+					lq = q1;
+				if (lm < 0)
+					lm = m2;
 
 				if (!crossed)
 				{
@@ -767,23 +792,29 @@ CCMD(debug_joystick_curves)
 					continue;
 				}
 
-				Printf(
-					"  x %0.2f y %0.2f q %d\n"
-					"  b %hx a %0.2f m %0.2f\n",
-					x2, y2, q2,
-					buttons, a2, m2
-				);
+				Printf("  x %0.2f y %0.2f q %d\n"
+				       "  b %hx a %0.2f m %0.2f\n",
+				       x2, y2, q2, buttons, a2, m2);
 
 				bool f = false;
-				if (q2 != lq) { f = true; Printf("! q\n"); };
-				if (m2 < lm) { f = true; Printf("! m\n"); };
-				if (f) fail(c, x1, y1);
+				if (q2 != lq)
+				{
+					f = true;
+					Printf("! q\n");
+				};
+				if (m2 < lm)
+				{
+					f = true;
+					Printf("! m\n");
+				};
+				if (f)
+					fail(c, x1, y1);
 			}
 		}
 	}
 
-	Printf("%s\n", failed.Size() == 0? "ok": "failed:");
-	for (auto f: failed)
+	Printf("%s\n", failed.Size() == 0 ? "ok" : "failed:");
+	for (auto f : failed)
 		Printf("! %s\n", f.GetChars());
 }
 #endif
@@ -798,9 +829,9 @@ CCMD(debug_joystick_curves)
 
 void Joy_GenerateButtonEvent(bool down, EKeyCodes which)
 {
-	event_t event = { 0,0,0,0,0,0,0 };
-	event.type = down ? EV_KeyDown : EV_KeyUp;
-	event.data1 = which;
+	event_t event = {0, 0, 0, 0, 0, 0, 0};
+	event.type    = down ? EV_KeyDown : EV_KeyUp;
+	event.data1   = which;
 	D_PostEvent(&event);
 }
 
@@ -815,6 +846,22 @@ void Joy_GenerateButtonEvent(bool down, EKeyCodes which)
 //===========================================================================
 
 void Joy_GenerateButtonEvents(int oldbuttons, int newbuttons, int numbuttons, int base)
+{
+	int changed = oldbuttons ^ newbuttons;
+	if (changed != 0)
+	{
+		int mask = 1;
+		for (int j = 0; j < numbuttons; mask <<= 1, ++j)
+		{
+			if (changed & mask)
+			{
+				Joy_GenerateButtonEvent(newbuttons & mask, static_cast<EKeyCodes>(base + j));
+			}
+		}
+	}
+}
+
+void Joy_GenerateButtonEvents(int oldbuttons, int newbuttons, int numbuttons, int base, int deviceIndex)
 {
 	int changed = oldbuttons ^ newbuttons;
 	if (changed != 0)

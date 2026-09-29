@@ -25,34 +25,34 @@
 
 #include "m_joy.h"
 #define WIN32_LEAN_AND_MEAN
+#include <limits.h>
 #include <windows.h>
 #include <xinput.h>
-#include <limits.h>
 
-#include "i_input.h"
 #include "d_eventbase.h"
+#include "i_input.h"
 
-#include "gameconfigfile.h"
-#include "m_argv.h"
 #include "cmdlib.h"
+#include "gameconfigfile.h"
 #include "keydef.h"
+#include "m_argv.h"
 
 // MACROS ------------------------------------------------------------------
 
 // This macro is defined by newer versions of xinput.h. In case we are
 // compiling with an older version, define it here.
 #ifndef XUSER_MAX_COUNT
-#define XUSER_MAX_COUNT                 4
+#define XUSER_MAX_COUNT 4
 #endif
 
 // MinGW
 #ifndef XINPUT_DLL
-#define XINPUT_DLL_A  "xinput1_3.dll"
+#define XINPUT_DLL_A "xinput1_3.dll"
 #define XINPUT_DLL_W L"xinput1_3.dll"
 #ifdef UNICODE
-	#define XINPUT_DLL XINPUT_DLL_W
+#define XINPUT_DLL XINPUT_DLL_W
 #else
-	#define XINPUT_DLL XINPUT_DLL_A
+#define XINPUT_DLL XINPUT_DLL_A
 #endif
 #endif
 
@@ -62,37 +62,40 @@ EXTERN_CVAR(Bool, use_joystick)
 
 // TYPES -------------------------------------------------------------------
 
-typedef DWORD (WINAPI *XInputGetStateType)(DWORD index, XINPUT_STATE *state);
-typedef DWORD (WINAPI *XInputSetStateType)(DWORD index, XINPUT_STATE *state);
-typedef DWORD (WINAPI *XInputGetCapabilitiesType)(DWORD index, DWORD flags, XINPUT_CAPABILITIES *caps);
-typedef void  (WINAPI *XInputEnableType)(BOOL enable);
+typedef DWORD(WINAPI *XInputGetStateType)(DWORD index, XINPUT_STATE *state);
+typedef DWORD(WINAPI *XInputSetStateType)(DWORD index, XINPUT_STATE *state);
+typedef DWORD(WINAPI *XInputGetCapabilitiesType)(DWORD index, DWORD flags, XINPUT_CAPABILITIES *caps);
+typedef void(WINAPI *XInputEnableType)(BOOL enable);
 
 class FXInputController : public IJoystickConfig
 {
-public:
+  public:
 	FXInputController(int index);
 	~FXInputController();
 
 	void ProcessInput();
 	void AddAxes(float axes[NUM_AXIS_CODES]);
-	bool IsConnected() { return Connected; }
+	bool IsConnected()
+	{
+		return Connected;
+	}
 
 	// IJoystickConfig interface
-	FString GetName();
-	float GetSensitivity();
+	FString      GetName();
+	float        GetSensitivity();
 	virtual void SetSensitivity(float scale);
 
-	bool HasHaptics();
+	bool  HasHaptics();
 	float GetHapticsStrength();
-	void SetHapticsStrength(float strength);
+	void  SetHapticsStrength(float strength);
 
-	int GetNumAxes();
-	float GetAxisDeadZone(int axis);
+	int         GetNumAxes();
+	float       GetAxisDeadZone(int axis);
 	const char *GetAxisName(int axis);
-	float GetAxisScale(int axis);
-	float GetAxisDigitalThreshold(int axis);
-	EJoyCurve GetAxisResponseCurve(int axis);
-	float GetAxisResponseCurvePoint(int axis, int point);
+	float       GetAxisScale(int axis);
+	float       GetAxisDigitalThreshold(int axis);
+	EJoyCurve   GetAxisResponseCurve(int axis);
+	float       GetAxisResponseCurvePoint(int axis, int point);
 
 	void SetAxisDeadZone(int axis, float deadzone);
 	void SetAxisScale(int axis, float scale);
@@ -112,29 +115,38 @@ public:
 
 	void Rumble(float low_freq, float high_freq);
 
-	bool AllowsEnabledInBackground() { return true; }
-	bool GetEnabledInBackground() { return EnabledInBackground; }
-	void SetEnabledInBackground(bool enabled) { EnabledInBackground = enabled; }
+	bool AllowsEnabledInBackground()
+	{
+		return true;
+	}
+	bool GetEnabledInBackground()
+	{
+		return EnabledInBackground;
+	}
+	void SetEnabledInBackground(bool enabled)
+	{
+		EnabledInBackground = enabled;
+	}
 
-	void SetDefaultConfig();
+	void    SetDefaultConfig();
 	FString GetIdentifier();
 
-protected:
+  protected:
 	struct AxisInfo
 	{
-		float Value;
-		float DeadZone;
-		float Multiplier;
-		uint8_t ButtonValue;
-		float DigitalThreshold;
-		EJoyCurve ResponseCurvePreset;
+		float       Value;
+		float       DeadZone;
+		float       Multiplier;
+		uint8_t     ButtonValue;
+		float       DigitalThreshold;
+		EJoyCurve   ResponseCurvePreset;
 		CubicBezier ResponseCurve;
 	};
 	struct DefaultAxisConfig
 	{
-		float DeadZone;
-		float Multiplier;
-		float DigitalThreshold;
+		float     DeadZone;
+		float     Multiplier;
+		float     DigitalThreshold;
 		EJoyCurve ResponseCurvePreset;
 	};
 	XINPUT_VIBRATION Vibration;
@@ -149,17 +161,17 @@ protected:
 		NUM_AXES
 	};
 
-	int Index;
-	float Multiplier;
-	AxisInfo Axes[NUM_AXES];
+	int                      Index;
+	float                    Multiplier;
+	AxisInfo                 Axes[NUM_AXES];
 	static DefaultAxisConfig DefaultAxes[NUM_AXES];
-	DWORD LastPacketNumber;
-	int LastButtons;
-	bool Connected;
-	bool Enabled;
-	bool EnabledInBackground;
-	bool Haptics;
-	float HapticStrength;
+	DWORD                    LastPacketNumber;
+	int                      LastButtons;
+	bool                     Connected;
+	bool                     Enabled;
+	bool                     EnabledInBackground;
+	bool                     Haptics;
+	float                    HapticStrength;
 
 	void Attached();
 	void Detached();
@@ -170,21 +182,21 @@ protected:
 
 class FXInputManager : public FJoystickCollection
 {
-public:
+  public:
 	FXInputManager();
 	~FXInputManager();
 
-	bool GetDevice();
-	void ProcessInput();
-	bool WndProcHook(HWND hWnd, uint32_t message, WPARAM wParam, LPARAM lParam, LRESULT *result);
-	void AddAxes(float axes[NUM_AXIS_CODES]);
-	void GetDevices(TArray<IJoystickConfig *> &sticks);
+	bool             GetDevice();
+	void             ProcessInput();
+	bool             WndProcHook(HWND hWnd, uint32_t message, WPARAM wParam, LPARAM lParam, LRESULT *result);
+	void             AddAxes(float axes[NUM_AXIS_CODES]);
+	void             GetDevices(TArray<IJoystickConfig *> &sticks);
 	IJoystickConfig *Rescan();
 
 	void Rumble(float low_freq, float high_freq);
 
-protected:
-	HMODULE XInputDLL;
+  protected:
+	HMODULE            XInputDLL;
 	FXInputController *Devices[XUSER_MAX_COUNT];
 };
 
@@ -200,49 +212,46 @@ EXTERN_FARG(nojoy);
 
 // PUBLIC DATA DEFINITIONS -------------------------------------------------
 
-CUSTOM_CVAR(Bool, joy_xinput, true, CVAR_GLOBALCONFIG|CVAR_ARCHIVE|CVAR_NOINITCALL)
+CUSTOM_CVAR(Bool, joy_xinput, true, CVAR_GLOBALCONFIG | CVAR_ARCHIVE | CVAR_NOINITCALL)
 {
 	I_StartupXInput();
-	event_t ev = { EV_DeviceChange };
+	event_t ev = {EV_DeviceChange};
 	D_PostEvent(&ev);
 }
 
 // PRIVATE DATA DEFINITIONS ------------------------------------------------
 
-static XInputGetStateType			InputGetState;
-static XInputSetStateType			InputSetState;
-static XInputGetCapabilitiesType	InputGetCapabilities;
-static XInputEnableType				InputEnable;
+static XInputGetStateType        InputGetState;
+static XInputSetStateType        InputSetState;
+static XInputGetCapabilitiesType InputGetCapabilities;
+static XInputEnableType          InputEnable;
 
-static const char *AxisNames[] =
-{
-	"Left Thumb X Axis",
-	"Left Thumb Y Axis",
-	"Right Thumb X Axis",
-	"Right Thumb Y Axis",
-	"Left Trigger",
-	"Right Trigger"
+static const char *AxisNames[] = {"Left Thumb X Axis",  "Left Thumb Y Axis", "Right Thumb X Axis",
+                                  "Right Thumb Y Axis", "Left Trigger",      "Right Trigger"};
+
+static const EAxisCodes AxisCodes[][2] = {
+	{AXIS_CODE_PAD_LTHUMB_RIGHT, AXIS_CODE_PAD_LTHUMB_LEFT},
+	{ AXIS_CODE_PAD_LTHUMB_DOWN,   AXIS_CODE_PAD_LTHUMB_UP},
+	{AXIS_CODE_PAD_RTHUMB_RIGHT, AXIS_CODE_PAD_RTHUMB_LEFT},
+	{ AXIS_CODE_PAD_RTHUMB_DOWN,   AXIS_CODE_PAD_RTHUMB_UP},
+	{    AXIS_CODE_PAD_LTRIGGER,            AXIS_CODE_NULL},
+	{    AXIS_CODE_PAD_RTRIGGER,            AXIS_CODE_NULL}
 };
 
-static const EAxisCodes AxisCodes[][2] =
-{
-	{ AXIS_CODE_PAD_LTHUMB_RIGHT, AXIS_CODE_PAD_LTHUMB_LEFT },
-	{ AXIS_CODE_PAD_LTHUMB_DOWN, AXIS_CODE_PAD_LTHUMB_UP },
-	{ AXIS_CODE_PAD_RTHUMB_RIGHT, AXIS_CODE_PAD_RTHUMB_LEFT },
-	{ AXIS_CODE_PAD_RTHUMB_DOWN, AXIS_CODE_PAD_RTHUMB_UP },
-	{ AXIS_CODE_PAD_LTRIGGER, AXIS_CODE_NULL },
-	{ AXIS_CODE_PAD_RTRIGGER, AXIS_CODE_NULL }
-};
-
-FXInputController::DefaultAxisConfig FXInputController::DefaultAxes[NUM_AXES] =
-{
+FXInputController::DefaultAxisConfig FXInputController::DefaultAxes[NUM_AXES] = {
 	// Dead zone, multiplier, digitalthreshold, curveA, curveB
-	{ XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE / 32768.f,  JOYSENSITIVITY_DEFAULT, JOYTHRESH_STICK_X, JOYCURVE_DEFAULT }, // ThumbLX
-	{ XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE / 32768.f,  JOYSENSITIVITY_DEFAULT, JOYTHRESH_STICK_Y, JOYCURVE_DEFAULT }, // ThumbLY
-	{ XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE / 32768.f, JOYSENSITIVITY_DEFAULT, JOYTHRESH_STICK_X, JOYCURVE_DEFAULT }, // ThumbRX
-	{ XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE / 32768.f, JOYSENSITIVITY_DEFAULT, JOYTHRESH_STICK_Y, JOYCURVE_DEFAULT }, // ThumbRY
-	{ XINPUT_GAMEPAD_TRIGGER_THRESHOLD / 256.f,      JOYSENSITIVITY_DEFAULT, JOYTHRESH_TRIGGER, JOYCURVE_DEFAULT }, // LeftTrigger
-	{ XINPUT_GAMEPAD_TRIGGER_THRESHOLD / 256.f,      JOYSENSITIVITY_DEFAULT, JOYTHRESH_TRIGGER, JOYCURVE_DEFAULT }  // RightTrigger
+	{ XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE / 32768.f, JOYSENSITIVITY_DEFAULT, JOYTHRESH_STICK_X,
+	 JOYCURVE_DEFAULT}, // ThumbLX
+	{ XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE / 32768.f, JOYSENSITIVITY_DEFAULT, JOYTHRESH_STICK_Y,
+	 JOYCURVE_DEFAULT}, // ThumbLY
+	{XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE / 32768.f, JOYSENSITIVITY_DEFAULT, JOYTHRESH_STICK_X,
+	 JOYCURVE_DEFAULT}, // ThumbRX
+	{XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE / 32768.f, JOYSENSITIVITY_DEFAULT, JOYTHRESH_STICK_Y,
+	 JOYCURVE_DEFAULT}, // ThumbRY
+	{     XINPUT_GAMEPAD_TRIGGER_THRESHOLD / 256.f, JOYSENSITIVITY_DEFAULT, JOYTHRESH_TRIGGER,
+	 JOYCURVE_DEFAULT}, // LeftTrigger
+	{     XINPUT_GAMEPAD_TRIGGER_THRESHOLD / 256.f, JOYSENSITIVITY_DEFAULT, JOYTHRESH_TRIGGER,
+	 JOYCURVE_DEFAULT}  // RightTrigger
 };
 
 // CODE --------------------------------------------------------------------
@@ -255,9 +264,9 @@ FXInputController::DefaultAxisConfig FXInputController::DefaultAxes[NUM_AXES] =
 
 FXInputController::FXInputController(int index)
 {
-	Index = index;
+	Index     = index;
 	Connected = false;
-	Enabled = true;
+	Enabled   = true;
 	M_LoadJoystickConfig(this);
 }
 
@@ -274,7 +283,7 @@ FXInputController::~FXInputController()
 	ProcessThumbstick(0, &Axes[AXIS_ThumbRX], 0, &Axes[AXIS_ThumbRY], KEY_PAD_RTHUMB_RIGHT);
 	ProcessTrigger(0, &Axes[AXIS_LeftTrigger], KEY_PAD_LTRIGGER);
 	ProcessTrigger(0, &Axes[AXIS_RightTrigger], KEY_PAD_RTRIGGER);
-	Joy_GenerateButtonEvents(LastButtons, 0, 16, KEY_PAD_DPAD_UP);
+	Joy_GenerateButtonEvents(LastButtons, 0, 16, KEY_PAD_DPAD_UP, Index);
 	M_SaveJoystickConfig(this);
 }
 
@@ -286,7 +295,7 @@ FXInputController::~FXInputController()
 
 void FXInputController::ProcessInput()
 {
-	DWORD res;
+	DWORD        res;
 	XINPUT_STATE state;
 
 	res = InputGetState(Index, &state);
@@ -319,18 +328,18 @@ void FXInputController::ProcessInput()
 
 	// Convert axes to floating point and cancel out deadzones.
 	// XInput's Y axes are reversed compared to DirectInput.
-	ProcessThumbstick(state.Gamepad.sThumbLX, &Axes[AXIS_ThumbLX],
-					 -state.Gamepad.sThumbLY, &Axes[AXIS_ThumbLY], KEY_PAD_LTHUMB_RIGHT);
-	ProcessThumbstick(state.Gamepad.sThumbRX, &Axes[AXIS_ThumbRX],
-					 -state.Gamepad.sThumbRY, &Axes[AXIS_ThumbRY], KEY_PAD_RTHUMB_RIGHT);
+	ProcessThumbstick(state.Gamepad.sThumbLX, &Axes[AXIS_ThumbLX], -state.Gamepad.sThumbLY, &Axes[AXIS_ThumbLY],
+	                  KEY_PAD_LTHUMB_RIGHT);
+	ProcessThumbstick(state.Gamepad.sThumbRX, &Axes[AXIS_ThumbRX], -state.Gamepad.sThumbRY, &Axes[AXIS_ThumbRY],
+	                  KEY_PAD_RTHUMB_RIGHT);
 	ProcessTrigger(state.Gamepad.bLeftTrigger, &Axes[AXIS_LeftTrigger], KEY_PAD_LTRIGGER);
 	ProcessTrigger(state.Gamepad.bRightTrigger, &Axes[AXIS_RightTrigger], KEY_PAD_RTRIGGER);
 
 	// Generate events for buttons that have changed.
-	Joy_GenerateButtonEvents(LastButtons, state.Gamepad.wButtons, 16, KEY_PAD_DPAD_UP);
+	Joy_GenerateButtonEvents(LastButtons, state.Gamepad.wButtons, 16, KEY_PAD_DPAD_UP, Index);
 
 	LastPacketNumber = state.dwPacketNumber;
-	LastButtons = state.Gamepad.wButtons;
+	LastButtons      = state.Gamepad.wButtons;
 }
 
 //==========================================================================
@@ -342,28 +351,22 @@ void FXInputController::ProcessInput()
 //
 //==========================================================================
 
-void FXInputController::ProcessThumbstick(int value1, AxisInfo *axis1,
-	int value2, AxisInfo *axis2, int base)
+void FXInputController::ProcessThumbstick(int value1, AxisInfo *axis1, int value2, AxisInfo *axis2, int base)
 {
 	uint8_t buttonstate;
-	double axisval1, axisval2;
+	double  axisval1, axisval2;
 
 	axisval1 = (value1 - SHRT_MIN) * 2.0 / 65536 - 1.0;
 	axisval2 = (value2 - SHRT_MIN) * 2.0 / 65536 - 1.0;
 
-	Joy_ManageThumbstick(
-		&axisval1, &axisval2,
-		axis1->DeadZone, axis2->DeadZone,
-		axis1->DigitalThreshold, axis2->DigitalThreshold,
-		axis1->ResponseCurve, axis2->ResponseCurve,
-		&buttonstate
-	);
+	Joy_ManageThumbstick(&axisval1, &axisval2, axis1->DeadZone, axis2->DeadZone, axis1->DigitalThreshold,
+	                     axis2->DigitalThreshold, axis1->ResponseCurve, axis2->ResponseCurve, &buttonstate);
 
 	axis1->Value = float(axisval1);
 	axis2->Value = float(axisval2);
 
 	// We store all four buttons in the first axis and ignore the second.
-	Joy_GenerateButtonEvents(axis1->ButtonValue, buttonstate, 4, base);
+	Joy_GenerateButtonEvents(axis1->ButtonValue, buttonstate, 4, base, Index);
 	axis1->ButtonValue = buttonstate;
 }
 
@@ -379,16 +382,13 @@ void FXInputController::ProcessThumbstick(int value1, AxisInfo *axis1,
 void FXInputController::ProcessTrigger(int value, AxisInfo *axis, int base)
 {
 	uint8_t buttonstate;
-	double axisval;
+	double  axisval;
 
-	axisval = Joy_ManageSingleAxis(
-		value / 256.0,
-		axis->DeadZone, axis->DigitalThreshold, axis->ResponseCurve,
-		&buttonstate
-	);
+	axisval =
+		Joy_ManageSingleAxis(value / 256.0, axis->DeadZone, axis->DigitalThreshold, axis->ResponseCurve, &buttonstate);
 
 	axis->Value = float(axisval);
-	Joy_GenerateButtonEvents(axis->ButtonValue, buttonstate, 1, base);
+	Joy_GenerateButtonEvents(axis->ButtonValue, buttonstate, 1, base, Index);
 	axis->ButtonValue = buttonstate;
 }
 
@@ -404,12 +404,12 @@ void FXInputController::Attached()
 {
 	int i;
 
-	Connected = true;
+	Connected        = true;
 	LastPacketNumber = ~0;
-	LastButtons = 0;
+	LastButtons      = 0;
 	for (i = 0; i < NUM_AXES; ++i)
 	{
-		Axes[i].Value = 0;
+		Axes[i].Value       = 0;
 		Axes[i].ButtonValue = 0;
 	}
 	XINPUT_CAPABILITIES capabilities;
@@ -428,8 +428,8 @@ void FXInputController::Attached()
 
 void FXInputController::Rumble(float low_freq, float high_freq)
 {
-	Vibration.wLeftMotorSpeed  = static_cast<unsigned short>(USHRT_MAX*clamp(high_freq*HapticStrength, 0.f, 1.f));
-	Vibration.wRightMotorSpeed = static_cast<unsigned short>(USHRT_MAX*clamp( low_freq*HapticStrength, 0.f, 1.f));
+	Vibration.wLeftMotorSpeed  = static_cast<unsigned short>(USHRT_MAX * clamp(high_freq * HapticStrength, 0.f, 1.f));
+	Vibration.wRightMotorSpeed = static_cast<unsigned short>(USHRT_MAX * clamp(low_freq * HapticStrength, 0.f, 1.f));
 	XInputSetState(Index, &Vibration);
 }
 
@@ -449,13 +449,13 @@ void FXInputController::Detached()
 	Connected = false;
 	for (i = 0; i < 4; i += 2)
 	{
-		ProcessThumbstick(0, &Axes[i], 0, &Axes[i+1], KEY_PAD_LTHUMB_RIGHT + i*2);
+		ProcessThumbstick(0, &Axes[i], 0, &Axes[i + 1], KEY_PAD_LTHUMB_RIGHT + i * 2);
 	}
 	for (i = 0; i < 2; ++i)
 	{
-		ProcessTrigger(0, &Axes[4+i], KEY_PAD_LTRIGGER + i);
+		ProcessTrigger(0, &Axes[4 + i], KEY_PAD_LTRIGGER + i);
 	}
-	Joy_GenerateButtonEvents(LastButtons, 0, 16, KEY_PAD_DPAD_UP);
+	Joy_GenerateButtonEvents(LastButtons, 0, 16, KEY_PAD_DPAD_UP, Index);
 	LastButtons = 0;
 	UpdateJoystickMenu(NULL);
 }
@@ -474,7 +474,7 @@ void FXInputController::AddAxes(float axes[NUM_AXIS_CODES])
 	{
 		// Add to the game axis.
 		float axis_value = float(Axes[i].Value * Multiplier * Axes[i].Multiplier);
-		int code = AXIS_CODE_NULL;
+		int   code       = AXIS_CODE_NULL;
 
 		if (axis_value > 0.0f)
 		{
@@ -500,14 +500,14 @@ void FXInputController::AddAxes(float axes[NUM_AXIS_CODES])
 
 void FXInputController::SetDefaultConfig()
 {
-	Multiplier = JOYSENSITIVITY_DEFAULT;
+	Multiplier     = JOYSENSITIVITY_DEFAULT;
 	HapticStrength = JOYHAPSTRENGTH_DEFAULT;
 	for (int i = 0; i < NUM_AXES; ++i)
 	{
-		Axes[i].DeadZone = DefaultAxes[i].DeadZone;
-		Axes[i].Multiplier = DefaultAxes[i].Multiplier;
-		Axes[i].DigitalThreshold = DefaultAxes[i].DigitalThreshold;
-		Axes[i].ResponseCurve = JOYCURVE[DefaultAxes[i].ResponseCurvePreset];
+		Axes[i].DeadZone            = DefaultAxes[i].DeadZone;
+		Axes[i].Multiplier          = DefaultAxes[i].Multiplier;
+		Axes[i].DigitalThreshold    = DefaultAxes[i].DigitalThreshold;
+		Axes[i].ResponseCurve       = JOYCURVE[DefaultAxes[i].ResponseCurvePreset];
 		Axes[i].ResponseCurvePreset = DefaultAxes[i].ResponseCurvePreset;
 	}
 }
@@ -599,7 +599,8 @@ float FXInputController::GetHapticsStrength()
 
 void FXInputController::SetHapticsStrength(float strength)
 {
-	if (Haptics) HapticStrength = clamp(strength, 0.f, 2.f);
+	if (Haptics)
+		HapticStrength = clamp(strength, 0.f, 2.f);
 }
 
 //==========================================================================
@@ -766,9 +767,11 @@ void FXInputController::SetAxisResponseCurve(int axis, EJoyCurve preset)
 {
 	if (unsigned(axis) < NUM_AXES)
 	{
-		if (preset >= NUM_JOYCURVE || preset < JOYCURVE_CUSTOM) return;
+		if (preset >= NUM_JOYCURVE || preset < JOYCURVE_CUSTOM)
+			return;
 		Axes[axis].ResponseCurvePreset = preset;
-		if (preset == JOYCURVE_CUSTOM) return;
+		if (preset == JOYCURVE_CUSTOM)
+			return;
 		Axes[axis].ResponseCurve = JOYCURVE[preset];
 	}
 }
@@ -783,7 +786,7 @@ void FXInputController::SetAxisResponseCurvePoint(int axis, int point, float val
 {
 	if (unsigned(axis) < NUM_AXES && unsigned(point) < 4)
 	{
-		Axes[axis].ResponseCurvePreset = JOYCURVE_CUSTOM;
+		Axes[axis].ResponseCurvePreset      = JOYCURVE_CUSTOM;
 		Axes[axis].ResponseCurve.pts[point] = value;
 	}
 }
@@ -881,10 +884,10 @@ FXInputManager::FXInputManager()
 	XInputDLL = LoadLibrary(XINPUT_DLL);
 	if (XInputDLL != NULL)
 	{
-		InputGetState = (XInputGetStateType)GetProcAddress(XInputDLL, "XInputGetState");
-		InputSetState = (XInputSetStateType)GetProcAddress(XInputDLL, "XInputSetState");
+		InputGetState        = (XInputGetStateType)GetProcAddress(XInputDLL, "XInputGetState");
+		InputSetState        = (XInputSetStateType)GetProcAddress(XInputDLL, "XInputSetState");
 		InputGetCapabilities = (XInputGetCapabilitiesType)GetProcAddress(XInputDLL, "XInputGetCapabilities");
-		InputEnable = (XInputEnableType)GetProcAddress(XInputDLL, "XInputEnable");
+		InputEnable          = (XInputEnableType)GetProcAddress(XInputDLL, "XInputEnable");
 		// Treat XInputEnable() function as optional
 		// It is not available in xinput9_1_0.dll which is XINPUT_DLL in modern SDKs
 		// See https://msdn.microsoft.com/en-us/library/windows/desktop/hh405051(v=vs.85).aspx
@@ -944,7 +947,7 @@ void FXInputManager::ProcessInput()
 {
 	for (int i = 0; i < XUSER_MAX_COUNT; ++i)
 	{
-		if(AppActive || Devices[i]->GetEnabledInBackground())
+		if (AppActive || Devices[i]->GetEnabledInBackground())
 		{
 			Devices[i]->ProcessInput();
 		}
@@ -1020,7 +1023,8 @@ bool FXInputManager::WndProcHook(HWND hWnd, uint32_t message, WPARAM wParam, LPA
 //
 //===========================================================================
 
-void FXInputManager::Rumble(float low_freq, float high_freq) {
+void FXInputManager::Rumble(float low_freq, float high_freq)
+{
 	for (int i = 0; i < XUSER_MAX_COUNT; ++i)
 	{
 		if (Devices[i] && Devices[i]->IsConnected() && Devices[i]->GetEnabled())
@@ -1075,10 +1079,12 @@ void I_StartupXInput()
 	}
 }
 
-void I_Rumble(double high_freq, double low_freq, double _left_trig, double _right_trig) {
-	if (!use_joystick) return;
+void I_Rumble(double high_freq, double low_freq, double _left_trig, double _right_trig)
+{
+	if (!use_joystick)
+		return;
 
-	FXInputManager* XInputManager = & static_cast<FXInputManager&> (*JoyDevices[INPUT_XInput]);
+	FXInputManager *XInputManager = &static_cast<FXInputManager &>(*JoyDevices[INPUT_XInput]);
 	if (XInputManager != NULL)
 	{
 		XInputManager->Rumble(static_cast<float>(high_freq), static_cast<float>(low_freq));
