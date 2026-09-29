@@ -726,6 +726,7 @@ void I_JoyConsumeEvent(int instanceID, event_t *event)
 		if (!okay)
 			return;
 	}
+	event->data1 += 55 * instanceID;
 	D_PostEvent(event);
 }
 

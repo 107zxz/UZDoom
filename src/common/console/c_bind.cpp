@@ -134,6 +134,56 @@ const char *KeyNames[NUM_KEYS] =
 	"Pad_A",       "Pad_B",      "Pad_X",        "Pad_Y",      //
 	"Paddle_1",    "Paddle_2",   "Paddle_3",     "Paddle_4",   //
 	"Guide",       "Pad_Misc",   "Pad_Touchpad",               //
+
+	"P2_Joy1",        "P2_Joy2",       "P2_Joy3",         "P2_Joy4",       // 128 joystick buttons for P2!
+	"P2_Joy5",        "P2_Joy6",       "P2_Joy7",         "P2_Joy8",       //
+	"P2_Joy9",        "P2_Joy10",      "P2_Joy11",        "P2_Joy12",      //
+	"P2_Joy13",       "P2_Joy14",      "P2_Joy15",        "P2_Joy16",      //
+	"P2_Joy17",       "P2_Joy18",      "P2_Joy19",        "P2_Joy20",      //
+	"P2_Joy21",       "P2_Joy22",      "P2_Joy23",        "P2_Joy24",      //
+	"P2_Joy25",       "P2_Joy26",      "P2_Joy27",        "P2_Joy28",      //
+	"P2_Joy29",       "P2_Joy30",      "P2_Joy31",        "P2_Joy32",      //
+	"P2_Joy33",       "P2_Joy34",      "P2_Joy35",        "P2_Joy36",      //
+	"P2_Joy37",       "P2_Joy38",      "P2_Joy39",        "P2_Joy40",      //
+	"P2_Joy41",       "P2_Joy42",      "P2_Joy43",        "P2_Joy44",      //
+	"P2_Joy45",       "P2_Joy46",      "P2_Joy47",        "P2_Joy48",      //
+	"P2_Joy49",       "P2_Joy50",      "P2_Joy51",        "P2_Joy52",      //
+	"P2_Joy53",       "P2_Joy54",      "P2_Joy55",        "P2_Joy56",      //
+	"P2_Joy57",       "P2_Joy58",      "P2_Joy59",        "P2_Joy60",      //
+	"P2_Joy61",       "P2_Joy62",      "P2_Joy63",        "P2_Joy64",      //
+	"P2_Joy65",       "P2_Joy66",      "P2_Joy67",        "P2_Joy68",      //
+	"P2_Joy69",       "P2_Joy70",      "P2_Joy71",        "P2_Joy72",      //
+	"P2_Joy73",       "P2_Joy74",      "P2_Joy75",        "P2_Joy76",      //
+	"P2_Joy77",       "P2_Joy78",      "P2_Joy79",        "P2_Joy80",      //
+	"P2_Joy81",       "P2_Joy82",      "P2_Joy83",        "P2_Joy84",      //
+	"P2_Joy85",       "P2_Joy86",      "P2_Joy87",        "P2_Joy88",      //
+	"P2_Joy89",       "P2_Joy90",      "P2_Joy91",        "P2_Joy92",      //
+	"P2_Joy93",       "P2_Joy94",      "P2_Joy95",        "P2_Joy96",      //
+	"P2_Joy97",       "P2_Joy98",      "P2_Joy99",        "P2_Joy100",     //
+	"P2_Joy101",      "P2_Joy102",     "P2_Joy103",       "P2_Joy104",     //
+	"P2_Joy105",      "P2_Joy106",     "P2_Joy107",       "P2_Joy108",     //
+	"P2_Joy109",      "P2_Joy110",     "P2_Joy111",       "P2_Joy112",     //
+	"P2_Joy113",      "P2_Joy114",     "P2_Joy115",       "P2_Joy116",     //
+	"P2_Joy117",      "P2_Joy118",     "P2_Joy119",       "P2_Joy120",     //
+	"P2_Joy121",      "P2_Joy122",     "P2_Joy123",       "P2_Joy124",     //
+	"P2_Joy125",      "P2_Joy126",     "P2_Joy127",       "P2_Joy128",     //
+	"P2_POV1Up",      "P2_POV1Right",  "P2_POV1Down",     "P2_POV1Left",   // First POV hat
+	"P2_POV2Up",      "P2_POV2Right",  "P2_POV2Down",     "P2_POV2Left",   // Second POV hat
+	"P2_POV3Up",      "P2_POV3Right",  "P2_POV3Down",     "P2_POV3Left",   // Third POV hat
+	"P2_POV4Up",      "P2_POV4Right",  "P2_POV4Down",     "P2_POV4Left",   // Fourth POV hat
+	"P2_MWheelUp",    "P2_MWheelDown", "P2_MWheelRight",  "P2_MWheelLeft", // the mouse wheel
+	"P2_Axis1Plus",   "P2_Axis1Minus", "P2_Axis2Plus",    "P2_Axis2Minus", // joystick axiis as buttons
+	"P2_Axis3Plus",   "P2_Axis3Minus", "P2_Axis4Plus",    "P2_Axis4Minus", //
+	"P2_Axis5Plus",   "P2_Axis5Minus", "P2_Axis6Plus",    "P2_Axis6Minus", //
+	"P2_Axis7Plus",   "P2_Axis7Minus", "P2_Axis8Plus",    "P2_Axis8Minus", //
+	"P2_LStickRight", "P2_LStickLeft", "P2_LStickDown",   "P2_LStickUp",   // Gamepad axis-based buttons
+	"P2_RStickRight", "P2_RStickLeft", "P2_RStickDown",   "P2_RStickUp",   //
+	"P2_DPadUp",      "P2_DPadDown",   "P2_DPadLeft",     "P2_DPadRight",  // Gamepad buttons
+	"P2_Pad_Start",   "P2_Pad_Back",   "P2_LThumb",       "P2_RThumb",     //
+	"P2_LShoulder",   "P2_RShoulder",  "P2_LTrigger",     "P2_RTrigger",   //
+	"P2_Pad_A",       "P2_Pad_B",      "P2_Pad_X",        "P2_Pad_Y",      //
+	"P2_Paddle_1",    "P2_Paddle_2",   "P2_Paddle_3",     "P2_Paddle_4",   //
+	"P2_Guide",       "P2_Pad_Misc",   "P2_Pad_Touchpad",               //
 };
 
 CVAR(Int, cl_doubleclickthreshold, 225, CVAR_ARCHIVE | CVAR_GLOBALCONFIG)

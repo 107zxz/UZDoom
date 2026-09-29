@@ -871,7 +871,7 @@ void Joy_GenerateButtonEvents(int oldbuttons, int newbuttons, int numbuttons, in
 		{
 			if (changed & mask)
 			{
-				Joy_GenerateButtonEvent(newbuttons & mask, static_cast<EKeyCodes>(base + j));
+				Joy_GenerateButtonEvent(newbuttons & mask, static_cast<EKeyCodes>(base + j + deviceIndex * 55));
 			}
 		}
 	}

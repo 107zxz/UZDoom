@@ -128,7 +128,7 @@ void M_SaveJoystickConfig(IJoystickConfig *joy);
 
 void Joy_GenerateButtonEvent(bool down, EKeyCodes which);
 void Joy_GenerateButtonEvents(int oldbuttons, int newbuttons, int numbuttons, int base);
-void Joy_GenerateButtonEvents(int oldbuttons, int newbuttons, int numbuttons, int DeviceIndex);
+void Joy_GenerateButtonEvents(int oldbuttons, int newbuttons, int numbuttons, int base, int DeviceIndex);
 void Joy_GenerateButtonEvents(int oldbuttons, int newbuttons, int numbuttons, const int *keys);
 
 double Joy_ApplyResponseCurveBezier(const CubicBezier &curve, double input);
