@@ -176,8 +176,8 @@ class FXInputController : public IJoystickConfig
 	void Attached();
 	void Detached();
 
-	static void ProcessThumbstick(int value1, AxisInfo *axis1, int value2, AxisInfo *axis2, int base);
-	static void ProcessTrigger(int value, AxisInfo *axis, int base);
+	static void ProcessThumbstick(int value1, AxisInfo *axis1, int value2, AxisInfo *axis2, int base, int Index);
+	static void ProcessTrigger(int value, AxisInfo *axis, int base, int Index);
 };
 
 class FXInputManager : public FJoystickCollection
@@ -279,10 +279,10 @@ FXInputController::FXInputController(int index)
 FXInputController::~FXInputController()
 {
 	// Send button up events before destroying this.
-	ProcessThumbstick(0, &Axes[AXIS_ThumbLX], 0, &Axes[AXIS_ThumbLY], KEY_PAD_LTHUMB_RIGHT);
-	ProcessThumbstick(0, &Axes[AXIS_ThumbRX], 0, &Axes[AXIS_ThumbRY], KEY_PAD_RTHUMB_RIGHT);
-	ProcessTrigger(0, &Axes[AXIS_LeftTrigger], KEY_PAD_LTRIGGER);
-	ProcessTrigger(0, &Axes[AXIS_RightTrigger], KEY_PAD_RTRIGGER);
+	ProcessThumbstick(0, &Axes[AXIS_ThumbLX], 0, &Axes[AXIS_ThumbLY], KEY_PAD_LTHUMB_RIGHT, Index);
+	ProcessThumbstick(0, &Axes[AXIS_ThumbRX], 0, &Axes[AXIS_ThumbRY], KEY_PAD_RTHUMB_RIGHT, Index);
+	ProcessTrigger(0, &Axes[AXIS_LeftTrigger], KEY_PAD_LTRIGGER, Index);
+	ProcessTrigger(0, &Axes[AXIS_RightTrigger], KEY_PAD_RTRIGGER, Index);
 	Joy_GenerateButtonEvents(LastButtons, 0, 16, KEY_PAD_DPAD_UP, Index);
 	M_SaveJoystickConfig(this);
 }
@@ -351,7 +351,7 @@ void FXInputController::ProcessInput()
 //
 //==========================================================================
 
-void FXInputController::ProcessThumbstick(int value1, AxisInfo *axis1, int value2, AxisInfo *axis2, int base)
+void FXInputController::ProcessThumbstick(int value1, AxisInfo *axis1, int value2, AxisInfo *axis2, int base, int Index)
 {
 	uint8_t buttonstate;
 	double  axisval1, axisval2;
@@ -379,7 +379,7 @@ void FXInputController::ProcessThumbstick(int value1, AxisInfo *axis1, int value
 //
 //==========================================================================
 
-void FXInputController::ProcessTrigger(int value, AxisInfo *axis, int base)
+void FXInputController::ProcessTrigger(int value, AxisInfo *axis, int base, int Index)
 {
 	uint8_t buttonstate;
 	double  axisval;
