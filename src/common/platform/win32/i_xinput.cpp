@@ -329,11 +329,11 @@ void FXInputController::ProcessInput()
 	// Convert axes to floating point and cancel out deadzones.
 	// XInput's Y axes are reversed compared to DirectInput.
 	ProcessThumbstick(state.Gamepad.sThumbLX, &Axes[AXIS_ThumbLX], -state.Gamepad.sThumbLY, &Axes[AXIS_ThumbLY],
-	                  KEY_PAD_LTHUMB_RIGHT);
+	                  KEY_PAD_LTHUMB_RIGHT, Index);
 	ProcessThumbstick(state.Gamepad.sThumbRX, &Axes[AXIS_ThumbRX], -state.Gamepad.sThumbRY, &Axes[AXIS_ThumbRY],
-	                  KEY_PAD_RTHUMB_RIGHT);
-	ProcessTrigger(state.Gamepad.bLeftTrigger, &Axes[AXIS_LeftTrigger], KEY_PAD_LTRIGGER);
-	ProcessTrigger(state.Gamepad.bRightTrigger, &Axes[AXIS_RightTrigger], KEY_PAD_RTRIGGER);
+	                  KEY_PAD_RTHUMB_RIGHT, Index);
+	ProcessTrigger(state.Gamepad.bLeftTrigger, &Axes[AXIS_LeftTrigger], KEY_PAD_LTRIGGER, Index);
+	ProcessTrigger(state.Gamepad.bRightTrigger, &Axes[AXIS_RightTrigger], KEY_PAD_RTRIGGER, Index);
 
 	// Generate events for buttons that have changed.
 	Joy_GenerateButtonEvents(LastButtons, state.Gamepad.wButtons, 16, KEY_PAD_DPAD_UP, Index);
@@ -449,11 +449,11 @@ void FXInputController::Detached()
 	Connected = false;
 	for (i = 0; i < 4; i += 2)
 	{
-		ProcessThumbstick(0, &Axes[i], 0, &Axes[i + 1], KEY_PAD_LTHUMB_RIGHT + i * 2);
+		ProcessThumbstick(0, &Axes[i], 0, &Axes[i + 1], KEY_PAD_LTHUMB_RIGHT + i * 2, Index);
 	}
 	for (i = 0; i < 2; ++i)
 	{
-		ProcessTrigger(0, &Axes[4 + i], KEY_PAD_LTRIGGER + i);
+		ProcessTrigger(0, &Axes[4 + i], KEY_PAD_LTRIGGER + i, Index);
 	}
 	Joy_GenerateButtonEvents(LastButtons, 0, 16, KEY_PAD_DPAD_UP, Index);
 	LastButtons = 0;
