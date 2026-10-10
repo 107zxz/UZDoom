@@ -86,9 +86,17 @@ FImageSource *ASEImage_TryCreate(FileReader &data, int lumpnum)
 	// Read frame
 	for (int frame = 0; frame < nFrames; frame++)
 	{
-		data.Seek(12, FileReader::SeekCur);
+		// data.Seek(12, FileReader::SeekCur);
+		data.Seek(6, FileReader::SeekCur);
+
+		uint16_t oldChunks = data.ReadUInt16();
+
+		data.Seek(4, FileReader::SeekCur);
 
 		uint32_t chunks = data.ReadUInt32();
+
+		if (chunks == 0)
+			chunks = oldChunks;
 
 		uint8_t *frameBuffer = new uint8_t[imWidth * 4 * imHeight]{};
 

@@ -1103,7 +1103,7 @@ void FTextureManager::ExpandAseTextures(int wadnum)
 	{
 		auto name = fileSystem.GetFileFullName(i);
 
-		if (strcmp(name + (strlen(name) - 4), ".ase") != 0)
+		if (strcmp(name + (strlen(name) - 4), ".ase") != 0 && strcmp(name + (strlen(name) - 9), ".aseprite") != 0)
 			continue;
 
 		// Get existing texture and start doing some EVIL!
