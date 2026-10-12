@@ -88,6 +88,8 @@ typedef int SOCKET;
 // #define neterror() strerror(errno)
 // #endif
 
+extern bool steam_enabled;
+
 // TODO: Remove noverification after optfile allows properly handling unverified files.
 FARG(noverification, "Multiplayer",
      "Allows files over netgames to be mismatched; use with caution. Can only be set by the host.", "", "");
@@ -183,7 +185,9 @@ static u_short GamePort  = (IPPORT_USERRESERVED + 29);
 static FConnection      Connected[MAXPLAYERS]           = {};
 static uint8_t          TransmitBuffer[MaxTransmitSize] = {};
 static TArray<uint64_t> BannedConnections               = {};
+static TArray<uint64_t> SteamSessions                   = {};
 static bool             bGameStarted                    = false;
+static CSteamID         CurrentLobby                    = {};
 
 CUSTOM_CVAR(String, net_password, "", CVAR_IGNORE)
 {
@@ -335,16 +339,39 @@ static void StartNetwork(bool autoPort)
 	// #endif
 }
 
+static void RememberSteamSession(uint64_t steamID)
+{
+	if (steamID == 0)
+		return;
+	for (uint64_t session : SteamSessions)
+		if (session == steamID)
+			return;
+	SteamSessions.Push(steamID);
+}
+
+static void CloseSteamSession(uint64_t steamID)
+{
+	if (steam_enabled && steamID != 0)
+	{
+		SteamNetworkingIdentity peer;
+		peer.SetSteamID64(steamID);
+		SteamNetworkingMessages()->CloseSessionWithUser(peer);
+	}
+}
+
 void CloseNetwork()
 {
-	// if (MySocket != INVALID_SOCKET)
-	// {
-	// 	closesocket(MySocket);
-	// 	MySocket = INVALID_SOCKET;
-	// 	netgame  = false;
-	// }
+	for (uint64_t steamID : SteamSessions)
+		CloseSteamSession(steamID);
+	for (const auto &client : Connected)
+		CloseSteamSession(client.SteamID);
+	SteamSessions.Clear();
 
-	// Todo: Close steam network
+	if (steam_enabled && CurrentLobby.IsValid())
+	{
+		SteamMatchmaking()->LeaveLobby(CurrentLobby);
+		CurrentLobby.Clear();
+	}
 
 	CloseNetworkLean();
 }
@@ -416,6 +443,19 @@ static void I_NetClientConnected(int client, unsigned int charLimit = 0u)
 		flags |= CFL_HOST;
 	if (client == consoleplayer)
 		flags |= CFL_CONSOLEPLAYER;
+
+	if (steam_enabled)
+	{
+		uint64_t steamID = Connected[client].SteamID;
+		if (client == consoleplayer && steamID == 0 && SteamUser() != nullptr)
+			steamID = SteamUser()->GetSteamID().ConvertToUint64();
+		if (steamID != 0)
+		{
+			const char *persona = SteamFriends()->GetFriendPersonaName(CSteamID(static_cast<uint64>(steamID)));
+			if (persona != nullptr && persona[0] != '\0')
+				name = persona;
+		}
+	}
 
 	NetStartWindow::NetConnect(client, name, flags, Connected[client].Status);
 }
@@ -489,6 +529,7 @@ static int FindClient(uint64_t steamID)
 
 static void SendPacket(uint64_t toSteamID)
 {
+	RememberSteamSession(toSteamID);
 	// Huge packets should be sent out as sequences, not as one big packet, otherwise it's prone
 	// to high amounts of congestion and reordering needed.
 	if (NetBufferLength > MAX_MSGLEN)
@@ -527,63 +568,43 @@ static void SendPacket(uint64_t toSteamID)
 	TransmitBuffer[2]  = crc >> 8;
 	TransmitBuffer[3]  = crc;
 
-	CSteamID t;
-	t.SetFromUint64(toSteamID);
-
-	// TransmitBuffer[size + 4] = '\0';
-
-	// TArray<uint8_t> b64 = base64_encode(TransmitBuffer, size + 4);
-	// Printf("Sending packet with contents \"%s\" to steam id %lu\n", (const char *)b64.Data(), toSteamID);
-
-	SteamNetworking()->SendP2PPacket(t, TransmitBuffer, size + 4, k_EP2PSendUnreliable);
-	// sendto(MySocket, (const char *)TransmitBuffer, size + 4, 0, (const sockaddr *)&to, sizeof(to));
+	SteamNetworkingIdentity peer;
+	peer.SetSteamID64(toSteamID);
+	const EResult result = SteamNetworkingMessages()->SendMessageToUser(
+		peer, TransmitBuffer, size + 4, k_nSteamNetworkingSend_Unreliable, 0);
+	if (result != k_EResultOK)
+		DPrintf(DMSG_NOTIFY, "Failed to send Steam networking message to %llu (result %d)",
+		        static_cast<unsigned long long>(toSteamID), result);
 }
 
 static void GetPacket(uint64_t *from = nullptr)
 {
-	// size_t   fromSize = sizeof(fromSteamID);
+	I_NetPumpSteam();
 
-	// int msgSize = recvfrom(MySocket, (char *)TransmitBuffer, MaxTransmitSize, 0, (sockaddr *)&fromAddress,
-	// &fromSize);
-
-	CSteamID fromSteamID;
-	uint32_t msgSize;
-	SteamNetworking()->ReadP2PPacket(TransmitBuffer, MaxTransmitSize, &msgSize, &fromSteamID);
+	SteamNetworkingMessage_t *message = nullptr;
+	const int messages = SteamNetworkingMessages()->ReceiveMessagesOnChannel(0, &message, 1);
+	int       msgSize  = 0;
+	CSteamID  fromSteamID;
+	if (messages > 0 && message != nullptr)
+	{
+		fromSteamID = message->m_identityPeer.GetSteamID();
+		RememberSteamSession(fromSteamID.ConvertToUint64());
+		if (message->m_cbSize > 0 && static_cast<size_t>(message->m_cbSize) <= sizeof(TransmitBuffer))
+		{
+			msgSize = message->m_cbSize;
+			memcpy(TransmitBuffer, message->m_pData, msgSize);
+		}
+		message->Release();
+	}
 
 	int client = FindClient(fromSteamID.ConvertToUint64());
-
-	if (client >= 0 && msgSize == SOCKET_ERROR)
+	if (msgSize > 0 && msgSize < 5)
 	{
-		int err = WSAGetLastError();
-		if (err == WSAECONNRESET)
-		{
-			if (consoleplayer == -1)
-			{
-				client  = -1;
-				msgSize = 0;
-			}
-			else
-			{
-				// The remote node aborted unexpectedly, so pretend it sent an exit packet. If it was the host,
-				// just consider the game too bricked to continue since the host has to determine the new host properly.
-				if (client == Net_Arbitrator)
-					I_NetError("Host unexpectedly disconnected");
-
-				NetBuffer[0] = NCMD_EXIT;
-				msgSize      = 1;
-			}
-		}
-		else if (err != WSAEWOULDBLOCK)
-		{
-			// I_Error("Failed to get packet: %s", neterror());
-		}
-		else
-		{
-			client  = -1;
-			msgSize = 0;
-		}
+		msgSize = 0;
+		client  = -1;
 	}
-	else if (msgSize > 0)
+
+	if (msgSize > 0)
 	{
 		// TArray<uint8_t> b64 = base64_encode(TransmitBuffer, msgSize);
 		// Printf("Recieving packet with contents \"%s\" from client %llu\n", (const char *)b64.Data(),
@@ -650,6 +671,12 @@ static void GetPacket(uint64_t *from = nullptr)
 	NetBufferLength = max<int>(msgSize, 0);
 	if (from != nullptr)
 		*from = fromSteamID.ConvertToUint64();
+}
+
+void I_NetPumpSteam()
+{
+	if (steam_enabled)
+		SteamAPI_RunCallbacks();
 }
 
 void I_NetCmd(ENetCommand cmd)
@@ -757,6 +784,7 @@ static void AddClientConnection(uint64_t fromSteamID, int client)
 static void RemoveClientConnection(int client)
 {
 	I_NetClientDisconnected(client);
+	CloseSteamSession(Connected[client].SteamID);
 	I_ClearClient(client);
 	NetworkClients -= client;
 	I_NetLog("Client %u left the lobby", client);
@@ -1540,18 +1568,14 @@ class CallbackHandler
 {
   private:
 	STEAM_CALLBACK(CallbackHandler, OnLobbyCreated, LobbyCreated_t);
-	STEAM_CALLBACK(CallbackHandler, OnP2PSessionRequest, P2PSessionRequest_t);
-	STEAM_CALLBACK(CallbackHandler, OnP2PSessionConnectFail, P2PSessionConnectFail_t);
-
-  public:
-	// void                                         OnLobbyCreated(LobbyCreated_t *cb, bool bIOFailure);
-	// CCallResult<CallbackHandler, LobbyCreated_t> m_LobbyCreatedCallResult;
+	STEAM_CALLBACK(CallbackHandler, OnMessagesSessionRequest, SteamNetworkingMessagesSessionRequest_t);
 };
 
 CallbackHandler handler;
 
 void CallbackHandler::OnLobbyCreated(LobbyCreated_t *cb)
 {
+	CurrentLobby.SetFromUint64(cb->m_ulSteamIDLobby);
 	uint64_t steamID = SteamUser()->GetSteamID().ConvertToUint64();
 	char     ownerID[32];
 #ifdef _WIN32
@@ -1565,13 +1589,8 @@ void CallbackHandler::OnLobbyCreated(LobbyCreated_t *cb)
 	SteamMatchmaking()->SetLobbyData(cb->m_ulSteamIDLobby, "amydoomowner", SteamFriends()->GetPersonaName());
 }
 
-void CallbackHandler::OnP2PSessionRequest(P2PSessionRequest_t *cb)
+void CallbackHandler::OnMessagesSessionRequest(SteamNetworkingMessagesSessionRequest_t *cb)
 {
-	// Blanket recieve packets. Add a lobby restriction sometime
-	SteamNetworking()->AcceptP2PSessionWithUser(cb->m_steamIDRemote);
-}
-
-void CallbackHandler::OnP2PSessionConnectFail(P2PSessionConnectFail_t *cb)
-{
-	Printf("Failed to connect to %lld with error %d\n", cb->m_steamIDRemote.ConvertToUint64(), cb->m_eP2PSessionError);
+	RememberSteamSession(cb->m_identityRemote.GetSteamID().ConvertToUint64());
+	SteamNetworkingMessages()->AcceptSessionWithUser(cb->m_identityRemote);
 }

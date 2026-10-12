@@ -120,7 +120,7 @@ struct FStartupSelectionInfo
 	FString AdditionalNetArgs = {}; // These ones shouldn't be saved.
 	FString DefaultNetSaveFile = {};
 	int DefaultNetHostTeam = 255;
-	int DefaultNetPlayers = 8;
+	int DefaultNetPlayers = 2;
 	int DefaultNetHostPort = 0;
 	int DefaultNetTicDup = 0;
 	bool DefaultNetExtraTic = false;

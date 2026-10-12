@@ -31,6 +31,7 @@ class TabWidget;
 struct WadStuff;
 struct FStartupSelectionInfo;
 class ListView;
+class Timer;
 
 class HostSubPage;
 class JoinSubPage;
@@ -122,6 +123,7 @@ private:
 
 	ListView* LobbyList = nullptr;
 	PushButton* RefreshButton = nullptr;
+	Timer* SteamCallbackTimer = nullptr;
 
 	TextLabel* TeamDeathmatchLabel = nullptr;
 	TextLabel* TeamLabel = nullptr;

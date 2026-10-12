@@ -23,6 +23,7 @@
 #include "basics.h"
 #include "c_console.h"
 #include "gstrings.h"
+#include "i_net.h"
 #include "netstartwindow.h"
 #include "version.h"
 
@@ -313,6 +314,7 @@ void NetStartWindow::OnGeometryChanged()
 
 void NetStartWindow::OnCallbackTimerExpired()
 {
+	I_NetPumpSteam();
 	static auto t = 0u;
 	if (timer_callback)
 	{

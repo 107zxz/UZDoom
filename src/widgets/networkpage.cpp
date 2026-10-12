@@ -16,6 +16,7 @@
 */
 
 #include <zwidget/core/resourcedata.h>
+#include <zwidget/core/timer.h>
 #include <zwidget/widgets/checkboxlabel/checkboxlabel.h>
 #include <zwidget/widgets/dropdown/dropdown.h>
 #include <zwidget/widgets/lineedit/lineedit.h>
@@ -446,6 +447,16 @@ JoinSubPage::JoinSubPage(NetworkPage *main, const FStartupSelectionInfo &info) :
 
 	// AddressPortHintLabel->SetStyleColor("color", Theme::getMain(COLOR_MIX));
 	TeamHintLabel->SetStyleColor("color", Theme::getMain(COLOR_MIX));
+
+	if (steam_enabled)
+	{
+		SteamCallbackTimer = new Timer(this);
+		SteamCallbackTimer->FuncExpired = [] {
+			if (steam_enabled)
+				I_NetPumpSteam();
+		};
+		SteamCallbackTimer->Start(50);
+	}
 }
 
 void JoinSubPage::SetValues(FStartupSelectionInfo &info) const
@@ -544,18 +555,14 @@ void JoinSubPage::OnLobbySearch(LobbyMatchList_t *cb)
 	{
 		CSteamID lobbyID = SteamMatchmaking()->GetLobbyByIndex(i);
 
-		const char *datkey;
-		const char *playerID;
+		const CSteamID owner = SteamMatchmaking()->GetLobbyOwner(lobbyID);
+		const char *name = SteamFriends()->GetFriendPersonaName(owner);
+		if (name == nullptr || name[0] == '\0')
+			name = SteamMatchmaking()->GetLobbyData(lobbyID, "amydoomowner");
 
-		// SteamMatchmaking()->GetLobbyDataByIndex(lobbyID, 0, datkey, 20, datval, 20);
-		datkey   = SteamMatchmaking()->GetLobbyData(lobbyID, "amydoomowner");
-		playerID = SteamMatchmaking()->GetLobbyData(lobbyID, "owner_id");
-
-		// Printf("Lobby %d: %s (%s)\n", i, datkey, playerID);
-
-		if (datkey[0] != '\0')
+		if (name != nullptr && name[0] != '\0')
 		{
-			LobbyList->AddItem(datkey);
+			LobbyList->AddItem(name);
 			foundLobbies.push_back(lobbyID);
 		}
 	}

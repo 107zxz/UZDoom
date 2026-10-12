@@ -1608,6 +1608,8 @@ void D_DoomLoop()
 				I_StartFrame();
 			}
 			I_SetFrameTime();
+			if (steam_enabled)
+				I_NetPumpSteam();
 
 			TryRunTics(); // will run at least one tic
 			// Update display, next frame, with current state.
@@ -4372,14 +4374,14 @@ int GameMain()
 
 	if (SteamAPI_Init())
 	{
+		// Let Steam choose a direct ICE route when the user's privacy settings allow it;
+		// SDR remains available when a direct route cannot or should not be used.
 		SteamNetworkingUtils()->InitRelayNetworkAccess();
 		steam_enabled = true;
 	}
 	else
 	{
-
 		Printf(TEXTCOLOR_RED "SteamAPI_Init() failed. Steam features will be disabled.\n");
-		SteamAPI_Shutdown();
 		steam_enabled = false;
 	}
 
@@ -4422,6 +4424,12 @@ int GameMain()
 	// No more 'exit', please.
 	D_Cleanup();
 	CloseNetwork();
+	if (steam_enabled)
+	{
+		SteamAPI_RunCallbacks();
+		SteamAPI_Shutdown();
+		steam_enabled = false;
+	}
 	GC::FinalGC = true;
 	GC::FullGC();
 	GC::DelSoftRootHead(); // the soft root head will not be collected by a GC so we have to do it explicitly

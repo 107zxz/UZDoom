@@ -119,6 +119,7 @@ extern int          MaxClients;
 bool I_InitNetwork();
 void I_ClearClient(size_t client);
 void I_NetCmd(ENetCommand cmd);
+void I_NetPumpSteam();
 void I_NetDone();
 void HandleIncomingConnection();
 void CloseNetwork();
