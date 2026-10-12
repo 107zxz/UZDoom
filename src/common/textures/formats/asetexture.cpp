@@ -46,18 +46,124 @@
 class FASETexture : public FImageSource
 {
   public:
-	FASETexture(FileReader &lump, int lumpnum, int width, int height, int nFrames, uint8_t **frameBuffers);
+	FASETexture(int lumpnum, int width, int height, int nFrames, uint8_t **frameBuffers, uint8_t **palettedFrameBuffers,
+	            bool masked, bool translucent);
 	~FASETexture();
 
 	int            CopyPixels(FBitmap *bmp, int conversion, int frame = 0) override;
 	PalettedPixels CreatePalettedPixels(int conversion, int frame = 0) override;
 
   protected:
-	void ReadAlphaRemap(FileReader *lump, uint8_t *alpharemap);
-	void SetupPalette(FileReader &lump);
-
 	uint8_t **framesData;
+	uint8_t **framesPaletted;
 };
+
+namespace
+{
+enum
+{
+	ASE_OLD_PALETTE_CHUNK1 = 0x0004,
+	ASE_OLD_PALETTE_CHUNK2 = 0x0011,
+	ASE_CEL_CHUNK          = 0x2005,
+	ASE_PALETTE_CHUNK      = 0x2019,
+};
+
+static bool ASEDecompress(FileReader &data, uint8_t *out, size_t outSize, size_t compressedSize)
+{
+	TArray<uint8_t> in;
+	in.Resize((unsigned)compressedSize);
+	if (compressedSize != 0 && size_t(data.Read(in.Data(), compressedSize)) != compressedSize)
+	{
+		return false;
+	}
+
+	z_stream strm  = {};
+	strm.next_in   = in.Data();
+	strm.avail_in  = (uInt)compressedSize;
+	strm.next_out  = out;
+	strm.avail_out = (uInt)outSize;
+
+	int ret = inflateInit(&strm);
+	if (ret != Z_OK)
+	{
+		return false;
+	}
+
+	ret = inflate(&strm, Z_FINISH);
+	inflateEnd(&strm);
+	return ret == Z_STREAM_END && strm.total_out == outSize;
+}
+
+static void ASESetPaletteColor(uint8_t palette[256][4], unsigned index, uint8_t r, uint8_t g, uint8_t b, uint8_t a,
+                               uint8_t transparentIndex)
+{
+	if (index >= 256)
+	{
+		return;
+	}
+	palette[index][0] = r;
+	palette[index][1] = g;
+	palette[index][2] = b;
+	palette[index][3] = index == transparentIndex ? 0 : a;
+}
+
+static void ASEReadOldPaletteChunk(FileReader &data, uint8_t palette[256][4], uint16_t chunkType,
+                                   uint8_t transparentIndex)
+{
+	auto     packets = data.ReadUInt16();
+	unsigned index   = 0;
+	for (unsigned p = 0; p < packets; ++p)
+	{
+		index += data.ReadUInt8();
+		unsigned colors = data.ReadUInt8();
+		if (colors == 0)
+		{
+			colors = 256;
+		}
+		for (unsigned i = 0; i < colors; ++i, ++index)
+		{
+			auto r = data.ReadUInt8();
+			auto g = data.ReadUInt8();
+			auto b = data.ReadUInt8();
+			if (chunkType == ASE_OLD_PALETTE_CHUNK1)
+			{
+				r = (uint8_t)((r * 255 + 31) / 63);
+				g = (uint8_t)((g * 255 + 31) / 63);
+				b = (uint8_t)((b * 255 + 31) / 63);
+			}
+			ASESetPaletteColor(palette, index, r, g, b, 255, transparentIndex);
+		}
+	}
+}
+
+static void ASEReadPaletteChunk(FileReader &data, uint8_t palette[256][4], uint8_t transparentIndex)
+{
+	data.ReadUInt32(); // palette size, not needed here.
+	auto first = data.ReadUInt32();
+	auto last  = data.ReadUInt32();
+	data.Seek(8, FileReader::SeekCur);
+
+	if (last < first)
+	{
+		return;
+	}
+
+	for (uint32_t index = first; index <= last; ++index)
+	{
+		auto flags = data.ReadUInt16();
+		auto r     = data.ReadUInt8();
+		auto g     = data.ReadUInt8();
+		auto b     = data.ReadUInt8();
+		auto a     = data.ReadUInt8();
+		ASESetPaletteColor(palette, index, r, g, b, a, transparentIndex);
+		if ((flags & 1) != 0)
+		{
+			auto nameLength = data.ReadUInt16();
+			data.Seek(nameLength, FileReader::SeekCur);
+		}
+	}
+}
+} // namespace
 
 //==========================================================================
 //
@@ -67,133 +173,242 @@ class FASETexture : public FImageSource
 
 FImageSource *ASEImage_TryCreate(FileReader &data, int lumpnum)
 {
+	if ((size_t)data.GetLength() < 128)
+	{
+		return nullptr;
+	}
 
-	data.Seek(4, FileReader::SeekSet);
-	uint16_t res = data.ReadUInt16();
-	if (res != 0xa5e0)
-		return NULL;
+	data.Seek(0, FileReader::SeekSet);
+	data.ReadUInt32();
+	uint16_t magic = data.ReadUInt16();
+	if (magic != 0xa5e0)
+	{
+		return nullptr;
+	}
 
-	int nFrames = data.ReadUInt16();
+	int      nFrames    = data.ReadUInt16();
+	int      imWidth    = data.ReadUInt16();
+	int      imHeight   = data.ReadUInt16();
+	uint16_t colorDepth = data.ReadUInt16();
+	if (nFrames <= 0 || imWidth <= 0 || imHeight <= 0)
+	{
+		return nullptr;
+	}
+	if (colorDepth != 8 && colorDepth != 16 && colorDepth != 32)
+	{
+		return nullptr;
+	}
 
-	int imWidth  = data.ReadUInt16();
-	int imHeight = data.ReadUInt16();
-
-	// Decompress the first cel - grab 1st frame
+	data.Seek(28, FileReader::SeekSet);
+	uint8_t transparentIndex = data.ReadUInt8();
 	data.Seek(128, FileReader::SeekSet);
 
-	uint8_t **frames = new uint8_t *[nFrames];
-
-	// Read frame
-	for (int frame = 0; frame < nFrames; frame++)
+	uint8_t palette[256][4];
+	for (int i = 0; i < 256; ++i)
 	{
-		// data.Seek(12, FileReader::SeekCur);
-		data.Seek(6, FileReader::SeekCur);
+		palette[i][0] = (uint8_t)i;
+		palette[i][1] = (uint8_t)i;
+		palette[i][2] = (uint8_t)i;
+		palette[i][3] = i == transparentIndex ? 0 : 255;
+	}
 
-		uint16_t oldChunks = data.ReadUInt16();
+	uint8_t **frames         = new uint8_t *[nFrames];
+	uint8_t **palettedFrames = colorDepth == 8 ? new uint8_t *[nFrames] : nullptr;
+	bool      hasMasked      = false;
+	bool      hasTranslucent = false;
+	int       pixelSize      = colorDepth == 32 ? 4 : colorDepth == 16 ? 2 : 1;
 
-		data.Seek(4, FileReader::SeekCur);
-
-		uint32_t chunks = data.ReadUInt32();
-
-		if (chunks == 0)
-			chunks = oldChunks;
-
-		uint8_t *frameBuffer = new uint8_t[imWidth * 4 * imHeight]{};
-
-		for (uint32_t c = 0; c < chunks; c++)
+	for (int frame = 0; frame < nFrames; ++frame)
+	{
+		auto frameStart = data.Tell();
+		auto frameBytes = data.ReadUInt32();
+		auto frameMagic = data.ReadUInt16();
+		if (frameMagic != 0xf1fa || frameBytes < 16)
 		{
-			uint32_t chunksize = data.ReadUInt32();
-			uint16_t chunktype = data.ReadUInt16();
+			return nullptr;
+		}
 
-			if (chunktype == 0x2005)
+		auto oldChunks = data.ReadUInt16();
+		data.Seek(4, FileReader::SeekCur);
+		auto chunks = data.ReadUInt32();
+		if (chunks == 0)
+		{
+			chunks = oldChunks;
+		}
+
+		auto frameDataStart = data.Tell();
+		auto frameEnd       = frameStart + frameBytes;
+
+		if (colorDepth == 8)
+		{
+			for (uint32_t c = 0; c < chunks && data.Tell() < frameEnd; ++c)
 			{
-				// Skip the extra meta
-				data.Seek(2, FileReader::SeekCur);
-
-				int celOfX = data.ReadInt16();
-				int celOfY = data.ReadInt16();
-
-				data.Seek(1, FileReader::SeekCur);
-
-				uint16_t celtype = data.ReadUInt16();
-				assert(celtype == 2);
-
-				data.Seek(7, FileReader::SeekCur);
-				int celWidth  = data.ReadUInt16();
-				int celheight = data.ReadUInt16();
-
-				z_stream strm;
-				// Read file into input buf
-
-				size_t stream_length = chunksize - 6 - 7 - 9 - 4;
-
-				uint8_t *in       = new uint8_t[stream_length];
-				int      pixwidth = 4 * celWidth;
-				uint8_t *out      = new uint8_t[pixwidth * celheight];
-				data.Read(in, stream_length);
-
-				strm.zalloc   = NULL;
-				strm.zfree    = Z_NULL;
-				strm.opaque   = Z_NULL;
-				strm.avail_in = stream_length;
-				strm.next_in  = (uint8_t *)in;
-				int ret       = inflateInit(&strm);
-				if (ret != Z_OK)
-					perror("zlib");
-				do
+				auto chunkStart = data.Tell();
+				auto chunkSize  = data.ReadUInt32();
+				auto chunkType  = data.ReadUInt16();
+				if (chunkSize < 6)
 				{
-					strm.avail_out = pixwidth * celheight;
-					strm.next_out  = out;
-					ret            = inflate(&strm, Z_NO_FLUSH);
-					assert(ret != Z_STREAM_ERROR);
-					switch (ret)
-					{
-					case Z_NEED_DICT:
-						ret = Z_DATA_ERROR;
-						/* falls through */
-					case Z_DATA_ERROR:
-					case Z_MEM_ERROR:
-						inflateEnd(&strm);
-						break;
-					}
-				} while (strm.avail_out == 0);
-
-				inflateEnd(&strm);
-				if (ret != Z_STREAM_END)
-				{
-					puts("NOOOOOOO");
+					return nullptr;
 				}
-				else
+
+				switch (chunkType)
 				{
-					// Blit onto the out thing
-					for (int i = 0; i < celWidth * celheight; i++)
-					{
-						// Skip stuff out of range of the frame
-						if ((i / celWidth) + celOfY >= imHeight || (i / celWidth) + celOfY < 0)
-							continue;
+				case ASE_OLD_PALETTE_CHUNK1:
+				case ASE_OLD_PALETTE_CHUNK2:
+					ASEReadOldPaletteChunk(data, palette, chunkType, transparentIndex);
+					break;
 
-						if ((i % celWidth) + celOfX < 0 || (i % celWidth) + celOfX >= imWidth)
-							continue;
-
-						// Skip fully transparent stuff. We can add blending later
-						if (out[i * 4 + 3] == 0x00)
-							continue;
-
-						((uint32_t *)frameBuffer)[i % (celWidth) + celOfX + (i / celWidth + celOfY) * imWidth] =
-							((uint32_t *)out)[i];
-					}
+				case ASE_PALETTE_CHUNK:
+					ASEReadPaletteChunk(data, palette, transparentIndex);
+					break;
 				}
-				delete[] in;
-				delete[] out;
+				data.Seek(chunkStart + chunkSize, FileReader::SeekSet);
 			}
-			else
-				data.Seek(chunksize - 6, FileReader::SeekCur);
+		}
+
+		uint8_t paletteMap[256] = {};
+		if (colorDepth == 8)
+		{
+			for (int i = 0; i < 256; ++i)
+			{
+				paletteMap[i] = ImageHelpers::RGBToPalette(false, palette[i][0], palette[i][1], palette[i][2], palette[i][3]);
+			}
+		}
+
+		uint8_t *frameBuffer         = new uint8_t[imWidth * imHeight * 4]{};
+		uint8_t *framePalettedBuffer = colorDepth == 8 ? new uint8_t[imWidth * imHeight]{} : nullptr;
+		data.Seek(frameDataStart, FileReader::SeekSet);
+		for (uint32_t c = 0; c < chunks && data.Tell() < frameEnd; ++c)
+		{
+			auto chunkStart = data.Tell();
+			auto chunkSize  = data.ReadUInt32();
+			auto chunkType  = data.ReadUInt16();
+			if (chunkSize < 6)
+			{
+				return nullptr;
+			}
+
+			if (chunkType == ASE_CEL_CHUNK)
+			{
+				auto chunkEnd = chunkStart + chunkSize;
+				data.ReadUInt16(); // layer index
+				auto celOfX     = data.ReadInt16();
+				auto celOfY     = data.ReadInt16();
+				auto celOpacity = data.ReadUInt8();
+				auto celType    = data.ReadUInt16();
+				data.Seek(7, FileReader::SeekCur);
+
+				if (celType == 0 || celType == 2)
+				{
+					auto            celWidth  = data.ReadUInt16();
+					auto            celHeight = data.ReadUInt16();
+					size_t          rawSize   = size_t(celWidth) * celHeight * pixelSize;
+					TArray<uint8_t> celPixels;
+					celPixels.Resize((unsigned)rawSize);
+
+					bool ok = false;
+					if (celType == 0)
+					{
+						ok = rawSize == 0 || size_t(data.Read(celPixels.Data(), rawSize)) == rawSize;
+					}
+					else if (data.Tell() <= chunkEnd)
+					{
+						auto compressedSize = size_t(chunkEnd - data.Tell());
+						ok                  = ASEDecompress(data, celPixels.Data(), rawSize, compressedSize);
+					}
+
+					if (!ok)
+					{
+						return nullptr;
+					}
+
+					for (int y = 0; y < celHeight; ++y)
+					{
+						for (int x = 0; x < celWidth; ++x)
+						{
+							int dstX = x + celOfX;
+							int dstY = y + celOfY;
+							if (dstX < 0 || dstX >= imWidth || dstY < 0 || dstY >= imHeight)
+							{
+								continue;
+							}
+
+							size_t  srcPos = (size_t(y) * celWidth + x) * pixelSize;
+							uint8_t r, g, b, a;
+							if (colorDepth == 32)
+							{
+								r = celPixels[srcPos + 0];
+								g = celPixels[srcPos + 1];
+								b = celPixels[srcPos + 2];
+								a = celPixels[srcPos + 3];
+							}
+							else if (colorDepth == 16)
+							{
+								r = g = b = celPixels[srcPos + 0];
+								a         = celPixels[srcPos + 1];
+							}
+							else
+							{
+								auto index = celPixels[srcPos];
+								r          = palette[index][0];
+								g          = palette[index][1];
+								b          = palette[index][2];
+								a          = palette[index][3];
+							}
+
+							if (celOpacity != 255)
+							{
+								a = (uint8_t)((unsigned(a) * celOpacity + 127) / 255);
+							}
+							if (a == 0)
+							{
+								hasMasked = true;
+								continue;
+							}
+							if (a != 255)
+							{
+								hasTranslucent = true;
+							}
+
+							auto dstPixel = size_t(dstY) * imWidth + dstX;
+							auto dstPos   = dstPixel * 4;
+							frameBuffer[dstPos + 0] = r;
+							frameBuffer[dstPos + 1] = g;
+							frameBuffer[dstPos + 2] = b;
+							frameBuffer[dstPos + 3] = a;
+							if (framePalettedBuffer != nullptr)
+							{
+								framePalettedBuffer[dstPixel] = paletteMap[celPixels[srcPos]];
+							}
+						}
+					}
+				}
+			}
+
+			data.Seek(chunkStart + chunkSize, FileReader::SeekSet);
+		}
+
+		if (!hasMasked)
+		{
+			for (int i = 0; i < imWidth * imHeight; ++i)
+			{
+				if (frameBuffer[i * 4 + 3] == 0)
+				{
+					hasMasked = true;
+					break;
+				}
+			}
 		}
 
 		frames[frame] = frameBuffer;
+		if (palettedFrames != nullptr)
+		{
+			palettedFrames[frame] = framePalettedBuffer;
+		}
+		data.Seek(frameEnd, FileReader::SeekSet);
 	}
 
-	return new FASETexture(data, lumpnum, imWidth, imHeight, nFrames, frames);
+	return new FASETexture(lumpnum, imWidth, imHeight, nFrames, frames, palettedFrames, hasMasked, hasTranslucent);
 }
 
 //==========================================================================
@@ -210,7 +425,8 @@ FASETexture::~FASETexture()
 	// delete[] framesData;
 }
 
-FASETexture::FASETexture(FileReader &lump, int lumpnum, int width, int height, int nFrames, uint8_t **frames)
+FASETexture::FASETexture(int lumpnum, int width, int height, int nFrames, uint8_t **frames, uint8_t **palettedFrames,
+                         bool masked, bool translucent)
 	: FImageSource(lumpnum)
 {
 	Width  = width;
@@ -219,22 +435,11 @@ FASETexture::FASETexture(FileReader &lump, int lumpnum, int width, int height, i
 	LeftOffset = width / 2;
 	TopOffset  = height;
 
-	framesData  = frames;
-	NumOfFrames = nFrames;
-}
-
-void FASETexture::SetupPalette(FileReader &lump)
-{
-}
-
-//==========================================================================
-//
-//
-//
-//==========================================================================
-
-void FASETexture::ReadAlphaRemap(FileReader *lump, uint8_t *alpharemap)
-{
+	framesData      = frames;
+	framesPaletted  = palettedFrames;
+	NumOfFrames     = nFrames;
+	bMasked         = masked;
+	bTranslucent    = translucent;
 }
 
 //==========================================================================
@@ -245,9 +450,40 @@ void FASETexture::ReadAlphaRemap(FileReader *lump, uint8_t *alpharemap)
 
 PalettedPixels FASETexture::CreatePalettedPixels(int conversion, int frame)
 {
-	PalettedPixels Pixels(Width * Height);
+	if (frame < 0 || frame >= NumOfFrames)
+	{
+		frame = 0;
+	}
 
-	return Pixels;
+	if (framesPaletted != nullptr && conversion != luminance)
+	{
+		PalettedPixels pixels(Width * Height);
+		ImageHelpers::FlipNonSquareBlock(pixels.Data(), framesPaletted[frame], Width, Height, Width);
+		return pixels;
+	}
+
+	PalettedPixels pixels(Width * Height);
+	uint8_t       *dest    = pixels.Data();
+	const uint8_t *src     = framesData[frame];
+	bool           doalpha = conversion == luminance;
+	int            destAdv = Height;
+	int            destRew = Width * Height - 1;
+
+	for (int y = Height; y != 0; --y)
+	{
+		for (int x = Width; x != 0; --x)
+		{
+			auto r = *src++;
+			auto g = *src++;
+			auto b = *src++;
+			auto a = *src++;
+			*dest  = ImageHelpers::RGBToPalette(doalpha, r, g, b, a);
+			dest += destAdv;
+		}
+		dest -= destRew;
+	}
+
+	return pixels;
 }
 
 //===========================================================================
@@ -258,30 +494,12 @@ PalettedPixels FASETexture::CreatePalettedPixels(int conversion, int frame)
 
 int FASETexture::CopyPixels(FBitmap *bmp, int conversion, int frame)
 {
-	FileReader *lump;
-	FileReader  lfr;
+	if (frame < 0 || frame >= NumOfFrames)
+	{
+		frame = 0;
+	}
 
-	lfr  = fileSystem.OpenFileReader(SourceLump);
-	lump = &lfr;
-
-	int pixwidth = Width * 4;
-
-	// uint8_t *Pixels = new uint8_t[pixwidth * Height];
-
-	// // memset(Pixels, 255, pixwidth * Height);
-	// for (int i = 0; i < pixwidth * Height; i += 4)
-	// {
-	// 	Pixels[i]     = imageData[0 + i];
-	// 	Pixels[i + 1] = imageData[1 + i];
-	// 	Pixels[i + 2] = imageData[2 + i];
-	// 	Pixels[i + 3] = imageData[3 + i];
-	// }
-
-	bmp->CopyPixelDataRGB(0, 0, framesData[frame], pixwidth, Height, 4, pixwidth, 0, CF_RGBA);
-
-	// bmp->CopyPixelData(0,0,framesData[frame],pixwidth,Height,4,pixwidth,0)
-
-	// memset(bmp->GetPixels(), 0x0, bmp->GetBufferSize());
+	bmp->CopyPixelDataRGB(0, 0, framesData[frame], Width, Height, 4, Width * 4, 0, CF_RGBA);
 	return -1;
 }
 
