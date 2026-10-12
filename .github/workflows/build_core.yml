@@ -316,6 +316,9 @@ jobs:
         mkdir -p package/fm_banks
         cp -f ../fm_banks/* package/fm_banks
 
+        cp -f steam_appid.txt package/
+        cp -f ../libraries/steamworks/redistributable_bin/win64/steam_api64.dll package/
+
         shopt -s nullglob
         mv -f *.exe *.pk3 *.pdb package
 
@@ -337,6 +340,7 @@ jobs:
         app=UZDoom.app
         mv uzdoom.app ${app}
         mv package/licenses.zip ${app}/Contents/Resources
+        cp steam_appid.txt ${app}/Contents/MacOS/
 
         if dsymutil ${app}/Contents/MacOS/uzdoom; then
           mv ${app}/Contents/MacOS/uzdoom.dSYM ${app}/Contents/Resources/
@@ -448,6 +452,9 @@ jobs:
         # rm package/licenses.zip
 
         cmake --install . --prefix "package"
+        mkdir -p package/bin package/lib
+        cp -f steam_appid.txt package/bin/
+        cp -f libsteam_api.so package/lib/
 
     - name: List
       if: always()
