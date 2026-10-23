@@ -326,60 +326,6 @@ DEFINE_ACTION_FUNCTION(_PlayerInfo, GetCommandButtonsAtTic)
 	ACTION_RETURN_INT(static_cast<int>(command.buttons));
 }
 
-DEFINE_ACTION_FUNCTION(_PlayerInfo, GetCommandPitchAtTic)
-{
-	PARAM_SELF_STRUCT_PROLOGUE(player_t);
-	PARAM_INT(tic);
-	usercmd_t command = {};
-	LookupCommandAtTic(self, tic, command);
-	ACTION_RETURN_INT(command.pitch);
-}
-
-DEFINE_ACTION_FUNCTION(_PlayerInfo, GetCommandYawAtTic)
-{
-	PARAM_SELF_STRUCT_PROLOGUE(player_t);
-	PARAM_INT(tic);
-	usercmd_t command = {};
-	LookupCommandAtTic(self, tic, command);
-	ACTION_RETURN_INT(command.yaw);
-}
-
-DEFINE_ACTION_FUNCTION(_PlayerInfo, GetCommandRollAtTic)
-{
-	PARAM_SELF_STRUCT_PROLOGUE(player_t);
-	PARAM_INT(tic);
-	usercmd_t command = {};
-	LookupCommandAtTic(self, tic, command);
-	ACTION_RETURN_INT(command.roll);
-}
-
-DEFINE_ACTION_FUNCTION(_PlayerInfo, GetCommandForwardMoveAtTic)
-{
-	PARAM_SELF_STRUCT_PROLOGUE(player_t);
-	PARAM_INT(tic);
-	usercmd_t command = {};
-	LookupCommandAtTic(self, tic, command);
-	ACTION_RETURN_INT(command.forwardmove);
-}
-
-DEFINE_ACTION_FUNCTION(_PlayerInfo, GetCommandSideMoveAtTic)
-{
-	PARAM_SELF_STRUCT_PROLOGUE(player_t);
-	PARAM_INT(tic);
-	usercmd_t command = {};
-	LookupCommandAtTic(self, tic, command);
-	ACTION_RETURN_INT(command.sidemove);
-}
-
-DEFINE_ACTION_FUNCTION(_PlayerInfo, GetCommandUpMoveAtTic)
-{
-	PARAM_SELF_STRUCT_PROLOGUE(player_t);
-	PARAM_INT(tic);
-	usercmd_t command = {};
-	LookupCommandAtTic(self, tic, command);
-	ACTION_RETURN_INT(command.upmove);
-}
-
 // Find out which teams are present. If there is only one,
 // then another team should be chosen at random.
 //

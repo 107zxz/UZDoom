@@ -3004,20 +3004,14 @@ struct PlayerInfo native play	// self is what internally is known as player_t
 
 	native clearscope int GetAverageLatency() const;
 
-	// Rollback support: command sequence currently being simulated and the
-	// full command data for a specific sequence. Check availability before
-	// reading; command history is bounded by the engine's network backup buffer.
+	// Rollback support: current command/world sequence and exact buttons for a
+	// sequence. Check availability before reading; history is bounded by the
+	// engine's network backup buffer.
 	native clearscope int GetCommandTic() const;
 	native clearscope int GetWorldTic() const;
 	native clearscope int GetTicDup() const;
 	native clearscope bool HasCommandAtTic(int tic) const;
 	native clearscope int GetCommandButtonsAtTic(int tic) const;
-	native clearscope int GetCommandPitchAtTic(int tic) const;
-	native clearscope int GetCommandYawAtTic(int tic) const;
-	native clearscope int GetCommandRollAtTic(int tic) const;
-	native clearscope int GetCommandForwardMoveAtTic(int tic) const;
-	native clearscope int GetCommandSideMoveAtTic(int tic) const;
-	native clearscope int GetCommandUpMoveAtTic(int tic) const;
 
 	native clearscope static PlayerInfo GetNextPlayer(PlayerInfo p, bool noBots = false);
 	native clearscope static int GetNextPlayerNumber(int pNum, bool noBots = false);
