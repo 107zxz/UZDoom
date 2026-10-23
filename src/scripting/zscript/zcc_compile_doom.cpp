@@ -30,6 +30,7 @@
 #include "zcc-parse.h"
 #include "zcc_compile_doom.h"
 #include "v_text.h"
+#include "dobjgc.h"
 #include "p_lnspec.h"
 #include "v_video.h"
 
@@ -792,6 +793,19 @@ void ZCCDoomCompiler::ProcessDefaultFlag(PClassActor *cls, ZCC_FlagStmt *flg)
 	else
 	{
 		Error(flg, "Flag name may at most contain two parts");
+		return;
+	}
+
+	// NOROLLBACK is an object flag rather than an ActorFlags bit. Allow it
+	// in actor Default blocks and carry it from the class defaults to each
+	// instance through OF_TransferrableFlags in PClass::CreateNew().
+	if (n2 == nullptr && !stricmp(n1, "NOROLLBACK"))
+	{
+		auto defaults = reinterpret_cast<DObject *>(cls->Defaults);
+		if (flg->set)
+			defaults->ObjectFlags |= OF_NoRollback;
+		else
+			defaults->ObjectFlags &= ~OF_NoRollback;
 		return;
 	}
 

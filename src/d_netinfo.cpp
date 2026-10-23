@@ -227,6 +227,159 @@ DEFINE_ACTION_FUNCTION(_PlayerInfo, GetAverageLatency)
 	ACTION_RETURN_INT(ClientStates[self - players].AverageLatency);
 }
 
+DEFINE_ACTION_FUNCTION(_PlayerInfo, GetCommandTic)
+{
+	PARAM_SELF_STRUCT_PROLOGUE(player_t);
+	ACTION_RETURN_INT(gametic / TicDup);
+}
+
+DEFINE_ACTION_FUNCTION(_PlayerInfo, GetWorldTic)
+{
+	PARAM_SELF_STRUCT_PROLOGUE(player_t);
+	ACTION_RETURN_INT(gametic);
+}
+
+DEFINE_ACTION_FUNCTION(_PlayerInfo, GetTicDup)
+{
+	PARAM_SELF_STRUCT_PROLOGUE(player_t);
+	ACTION_RETURN_INT(TicDup);
+}
+
+EXTERN_CVAR (Int, cl_debugrollback)
+
+static bool LookupCommandAtTic(player_t* player, int tic, usercmd_t& command)
+{
+	if (player == nullptr || tic < 0)
+		return false;
+
+	const auto playerNum = player - players;
+	if (playerNum < 0 || static_cast<size_t>(playerNum) >= MAXPLAYERS)
+		return false;
+
+	// Local commands are built ahead of the world ticker. Expose them to the
+	// rollback simulation as soon as their command sequence is complete.
+	if ((netgame || (cl_debugrollback > 0 && !demoplayback)) && playerNum == consoleplayer)
+	{
+		const int latestLocalTic = ClientTic / TicDup - 1;
+		const int localHistoryTics = LOCALCMDTICS / TicDup;
+		if (tic <= latestLocalTic && latestLocalTic - tic < localHistoryTics)
+		{
+			command = LocalCmds[(tic * TicDup) % LOCALCMDTICS];
+			return true;
+		}
+		return false;
+	}
+
+	if (!netgame && cl_debugrollback > 0 && !demoplayback && playerNum != consoleplayer)
+	{
+		// Offline there is no independent remote command stream. Treat the
+		// simulated remote player as idle rather than echoing the local input,
+		// which makes both characters react to the same controls.
+		const int latestLocalTic = ClientTic / TicDup - 1;
+		const int latestRemoteTic = latestLocalTic - cl_debugrollback;
+		const int localHistoryTics = LOCALCMDTICS / TicDup;
+		if (tic <= latestRemoteTic && latestRemoteTic - tic < localHistoryTics)
+		{
+			command = {};
+			return true;
+		}
+		return false;
+	}
+
+	if (netgame)
+	{
+		// Remote commands are available only after the network layer has
+		// received the complete, contiguous sequence. Do not report player_t.cmd
+		// as valid here: during a rollback update it may still be the prior tic.
+		const auto& state = ClientStates[playerNum];
+		if (tic > state.CurrentSequence || state.CurrentSequence - tic >= BACKUPTICS)
+			return false;
+
+		command = state.Tics[tic % BACKUPTICS].Command;
+		return true;
+	}
+
+	// Outside netgames no command ring is populated, but the command currently
+	// installed by G_Ticker is still useful for ordinary, non-predicted play.
+	if (tic == gametic / TicDup)
+	{
+		command = player->cmd;
+		return true;
+	}
+	return false;
+}
+
+DEFINE_ACTION_FUNCTION(_PlayerInfo, HasCommandAtTic)
+{
+	PARAM_SELF_STRUCT_PROLOGUE(player_t);
+	PARAM_INT(tic);
+	usercmd_t command;
+	ACTION_RETURN_BOOL(LookupCommandAtTic(self, tic, command));
+}
+
+DEFINE_ACTION_FUNCTION(_PlayerInfo, GetCommandButtonsAtTic)
+{
+	PARAM_SELF_STRUCT_PROLOGUE(player_t);
+	PARAM_INT(tic);
+	usercmd_t command = {};
+	LookupCommandAtTic(self, tic, command);
+	ACTION_RETURN_INT(static_cast<int>(command.buttons));
+}
+
+DEFINE_ACTION_FUNCTION(_PlayerInfo, GetCommandPitchAtTic)
+{
+	PARAM_SELF_STRUCT_PROLOGUE(player_t);
+	PARAM_INT(tic);
+	usercmd_t command = {};
+	LookupCommandAtTic(self, tic, command);
+	ACTION_RETURN_INT(command.pitch);
+}
+
+DEFINE_ACTION_FUNCTION(_PlayerInfo, GetCommandYawAtTic)
+{
+	PARAM_SELF_STRUCT_PROLOGUE(player_t);
+	PARAM_INT(tic);
+	usercmd_t command = {};
+	LookupCommandAtTic(self, tic, command);
+	ACTION_RETURN_INT(command.yaw);
+}
+
+DEFINE_ACTION_FUNCTION(_PlayerInfo, GetCommandRollAtTic)
+{
+	PARAM_SELF_STRUCT_PROLOGUE(player_t);
+	PARAM_INT(tic);
+	usercmd_t command = {};
+	LookupCommandAtTic(self, tic, command);
+	ACTION_RETURN_INT(command.roll);
+}
+
+DEFINE_ACTION_FUNCTION(_PlayerInfo, GetCommandForwardMoveAtTic)
+{
+	PARAM_SELF_STRUCT_PROLOGUE(player_t);
+	PARAM_INT(tic);
+	usercmd_t command = {};
+	LookupCommandAtTic(self, tic, command);
+	ACTION_RETURN_INT(command.forwardmove);
+}
+
+DEFINE_ACTION_FUNCTION(_PlayerInfo, GetCommandSideMoveAtTic)
+{
+	PARAM_SELF_STRUCT_PROLOGUE(player_t);
+	PARAM_INT(tic);
+	usercmd_t command = {};
+	LookupCommandAtTic(self, tic, command);
+	ACTION_RETURN_INT(command.sidemove);
+}
+
+DEFINE_ACTION_FUNCTION(_PlayerInfo, GetCommandUpMoveAtTic)
+{
+	PARAM_SELF_STRUCT_PROLOGUE(player_t);
+	PARAM_INT(tic);
+	usercmd_t command = {};
+	LookupCommandAtTic(self, tic, command);
+	ACTION_RETURN_INT(command.upmove);
+}
+
 // Find out which teams are present. If there is only one,
 // then another team should be chosen at random.
 //

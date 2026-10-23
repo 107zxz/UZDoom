@@ -213,6 +213,16 @@ CUSTOM_CVAR(Int, cl_debugprediction, 0, CVAR_CHEAT)
 		self = BACKUPTICS - 1;
 }
 
+// Simulate a remote command stream this many sequences behind the local one
+// while running the game offline. Intended for mod-owned rollback testing.
+CUSTOM_CVAR(Int, cl_debugrollback, 0, CVAR_CHEAT)
+{
+	if (self < 0)
+		self = 0;
+	else if (self > BACKUPTICS - 1)
+		self = BACKUPTICS - 1;
+}
+
 // Used to write out all network events that occured leading up to the next tick.
 static struct NetEventData
 {
@@ -2235,6 +2245,30 @@ void TryRunTics()
 	if (pauseext)
 		return;
 
+	// Give rollback-enabled mods a chance to advance a game-owned simulation
+	// from local input even when the ordinary world ticker is waiting for a
+	// remote command. This deliberately does not advance gametic or any world
+	// thinkers; the handler must keep speculative state separate from them.
+	if ((netgame || cl_debugrollback > 0) && !demoplayback && !paused && gamestate == GS_LEVEL &&
+		primaryLevel != nullptr && primaryLevel->localEventManager != nullptr)
+	{
+		const int latestLocalTic = ClientTic / TicDup - 1;
+		int latestConfirmedTic = latestLocalTic;
+		if (netgame)
+		{
+			for (auto client : NetworkClients)
+			{
+				if (client != consoleplayer)
+					latestConfirmedTic = min<int>(latestConfirmedTic, ClientStates[client].CurrentSequence);
+			}
+		}
+		else
+		{
+			latestConfirmedTic -= cl_debugrollback;
+		}
+		primaryLevel->localEventManager->RollbackUpdate(latestLocalTic, latestConfirmedTic);
+	}
+
 	// Get the amount of tics the client can actually run. This accounts for waiting for other
 	// players over the network.
 	int lowestSequence = INT_MAX;
@@ -2244,18 +2278,15 @@ void TryRunTics()
 			lowestSequence = ClientStates[client].CurrentSequence;
 	}
 
-	// Test player prediction code in singleplayer by pretending there is another player
-	// that is running exactly x ticks behind us, emulating having a specific amount of ping
-	if (cl_debugprediction > 0 && !netgame && !demoplayback) // would probably function, but there's no reason to
+	// Emulate a remote peer lagging behind in singleplayer. cl_debugprediction
+	// tests the legacy player prediction path, while cl_debugrollback also
+	// needs to exercise that path so predicted movement and actor effects (such
+	// as camera motion and dash/hit feedback) run while confirmation is pending.
+	if (!netgame && !demoplayback)
 	{
-		if (lowestSequence > cl_debugprediction)
-		{
-			lowestSequence -= cl_debugprediction;
-		}
-		else
-		{
-			lowestSequence = 0;
-		}
+		const int debugDelay = max(cl_debugprediction, cl_debugrollback);
+		if (debugDelay > 0)
+			lowestSequence = max(lowestSequence - debugDelay, 0);
 	}
 
 	// If the lowest confirmed tic matches the server gametic or greater, allow the client

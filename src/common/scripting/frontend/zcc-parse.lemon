@@ -284,6 +284,12 @@ dottable_id(X) ::= ACTION(A).
 	id->Id = NAME_Action;
 	X = id;
 }
+dottable_id(X) ::= NOROLLBACK(A).
+{
+	NEW_AST_NODE(Identifier,id,A);
+	id->Id = static_cast<ENamedName>(FName("NOROLLBACK").GetIndex());
+	X = id;
+}
 dottable_id(X) ::= dottable_id(A) DOT IDENTIFIER(B).
 {
 	NEW_AST_NODE(Identifier,id2,A);

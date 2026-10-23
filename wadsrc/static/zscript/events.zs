@@ -220,6 +220,13 @@ class StaticEventHandler : Object native play version("2.4")
 	virtual void NetworkProcess(ConsoleEvent e) {}
 	version("4.12") virtual void NetworkCommandProcess(NetworkCommand cmd) {}
 
+	// Called from the network scheduler after command packets are processed.
+	// latestLocalTic is the newest local command sequence generated;
+	// latestConfirmedTic is the newest sequence known for every in-game peer.
+	// This callback may run while the ordinary world ticker is waiting for a
+	// remote command. Keep speculative simulation in mod-owned state.
+	virtual void RollbackUpdate(int latestLocalTic, int latestConfirmedTic) {}
+
 	//
 	virtual void CheckReplacement(ReplaceEvent e) {}
 	virtual void CheckReplacee(ReplacedEvent e) {}

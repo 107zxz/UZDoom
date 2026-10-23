@@ -979,6 +979,15 @@ void EventManager::NetCommand(FNetworkCommand& cmd)
 		handler->NetCommandProcess(cmd);
 }
 
+void EventManager::RollbackUpdate(int latestLocalTic, int latestConfirmedTic)
+{
+	if (ShouldCallStatic(true))
+		staticEventManager.RollbackUpdate(latestLocalTic, latestConfirmedTic);
+
+	for (DStaticEventHandler* handler = FirstEventHandler; handler; handler = handler->next)
+		handler->RollbackUpdate(latestLocalTic, latestConfirmedTic);
+}
+
 void EventManager::Console(int player, FString name, int arg1, int arg2, int arg3, bool manual, bool ui)
 {
 	if (ShouldCallStatic(false)) staticEventManager.Console(player, name, arg1, arg2, arg3, manual, ui);
@@ -2275,6 +2284,18 @@ void DStaticEventHandler::NetCommandProcess(FNetworkCommand& cmd)
 		VMCall(func, params, 2, nullptr, 0);
 
 		cmd.Reset();
+	}
+}
+
+void DStaticEventHandler::RollbackUpdate(int latestLocalTic, int latestConfirmedTic)
+{
+	IFVIRTUAL(DStaticEventHandler, RollbackUpdate)
+	{
+		if (isEmpty(func))
+			return;
+
+		VMValue params[] = { this, latestLocalTic, latestConfirmedTic };
+		VMCall(func, params, 3, nullptr, 0);
 	}
 }
 

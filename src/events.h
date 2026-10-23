@@ -362,6 +362,7 @@ public:
 	//
 	void ConsoleProcess(int player, FString name, int arg1, int arg2, int arg3, bool manual, bool ui);
 	void NetCommandProcess(FNetworkCommand& cmd);
+	void RollbackUpdate(int latestLocalTic, int latestConfirmedTic);
 
 	//
 	void CheckReplacement(PClassActor* replacee, PClassActor** replacement, bool* final);
@@ -556,6 +557,8 @@ struct EventManager
 	void Console(int player, FString name, int arg1, int arg2, int arg3, bool manual, bool ui);
 	// This reads from ZScript network commands.
 	void NetCommand(FNetworkCommand& cmd);
+	// called from TryRunTics after network input has been processed.
+	void RollbackUpdate(int latestLocalTic, int latestConfirmedTic);
 
 	// called when looking up the replacement for an actor class
 	bool CheckReplacement(PClassActor* replacee, PClassActor** replacement);
