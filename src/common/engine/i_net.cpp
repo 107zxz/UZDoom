@@ -33,6 +33,7 @@
 #define NOMINMAX
 #include <windows.h>
 #include <winsock.h>
+typedef int socklen_t;
 #else
 #include <arpa/inet.h>
 #include <errno.h>
@@ -106,6 +107,9 @@ FARG(dup, "Multiplayer", "Send less player movement commands over the network.",
 FARG(port, "Multiplayer", "Specifies an alternative IP port for a network game.", "x",
      "Specifies an alternate IP port for this machine to use during a network game. By default,"
      " port 5029 is used.");
+FARG(netmode, "Multiplayer", "Selects the multiplayer transport.", "steam|udp",
+     "Selects Steam networking (the default when available) or the legacy UDP client-server transport. Use"
+     " -netmode udp together with -host or -join; UDP hosts must allow incoming traffic on the selected port.");
 
 // As per http://support.microsoft.com/kb/q192599/ the standard
 // size for network buffers is 8k.
@@ -184,6 +188,8 @@ static u_short GamePort  = (IPPORT_USERRESERVED + 29);
 // static SOCKET              MySocket                        = INVALID_SOCKET;
 static FConnection      Connected[MAXPLAYERS]           = {};
 static uint8_t          TransmitBuffer[MaxTransmitSize] = {};
+static SOCKET           MySocket                        = INVALID_SOCKET;
+static bool             UseUDP                           = false;
 static TArray<uint64_t> BannedConnections               = {};
 static TArray<uint64_t> SteamSessions                   = {};
 static bool             bGameStarted                    = false;
@@ -207,6 +213,69 @@ void               Net_SetUserInfo(int client, TArrayView<uint8_t> &stream);
 void               Net_ReadUserInfo(int client, TArrayView<uint8_t> &stream);
 void               Net_ReadGameInfo(TArrayView<uint8_t> &stream);
 void               Net_SetGameInfo(TArrayView<uint8_t> &stream);
+
+static uint64_t PackAddress(const sockaddr_in &address)
+{
+	return (static_cast<uint64_t>(ntohl(address.sin_addr.s_addr)) << 16) | ntohs(address.sin_port);
+}
+
+static sockaddr_in UnpackAddress(uint64_t identity)
+{
+	sockaddr_in address = {};
+	address.sin_family = AF_INET;
+	address.sin_addr.s_addr = htonl(static_cast<uint32_t>(identity >> 16));
+	address.sin_port = htons(static_cast<uint16_t>(identity));
+	return address;
+}
+
+static SOCKET CreateUDPSocket()
+{
+	SOCKET socketHandle = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (socketHandle == INVALID_SOCKET)
+		I_FatalError("Couldn't create socket: %d", WSAGetLastError());
+	return socketHandle;
+}
+
+static void BindToLocalPort(SOCKET socketHandle, u_short port)
+{
+	sockaddr_in address = {};
+	address.sin_family = AF_INET;
+	address.sin_addr.s_addr = htonl(INADDR_ANY);
+	address.sin_port = htons(port);
+	if (bind(socketHandle, reinterpret_cast<sockaddr *>(&address), sizeof(address)) == SOCKET_ERROR)
+		I_FatalError("Couldn't bind to port %u: %d", port, WSAGetLastError());
+}
+
+static uint64_t BuildAddress(const char *addrName)
+{
+	FString target = {};
+	u_short port = GamePort;
+	const char *portName = strrchr(addrName, ':');
+	if (portName != nullptr)
+	{
+		target = FString(addrName, portName - addrName);
+		const unsigned long conversion = strtoul(portName + 1, nullptr, 10);
+		if (conversion == 0 || conversion > UINT16_MAX)
+			Printf("Malformed port: %s (using %u)\n", portName + 1, GamePort);
+		else
+			port = static_cast<u_short>(conversion);
+	}
+	else
+		target = addrName;
+
+	sockaddr_in address = {};
+	address.sin_family = AF_INET;
+	address.sin_port = htons(port);
+	address.sin_addr.s_addr = inet_addr(target.GetChars());
+	if (address.sin_addr.s_addr == INADDR_NONE)
+	{
+		hostent *hostEntry = gethostbyname(target.GetChars());
+		if (hostEntry == nullptr || hostEntry->h_addr_list[0] == nullptr)
+			I_FatalError("Couldn't find host %s", target.GetChars());
+		memcpy(&address.sin_addr, hostEntry->h_addr_list[0], sizeof(address.sin_addr));
+	}
+	return PackAddress(address);
+}
 
 // static SOCKET CreateUDPSocket()
 // {
@@ -279,20 +348,16 @@ int netInitCount = 0;
 
 void StartNetworkLean()
 {
-	// #ifdef _WIN32
-	// 	if (!DebugServer::RuntimeEvents::IsDebugServerRunning())
-	// 	{
-	// 		netInitCount++;
-	// 		if (netInitCount == 1)
-	// 		{
-	// 			WSADATA data;
-	// 			if (WSAStartup(MAKEWORD(2, 2), &data))
-	// 				I_FatalError("Couldn't initialize Windows sockets");
-	// 		}
-	// 	}
-	// #else
-	netInitCount++;
-	// #endif
+#ifdef _WIN32
+	if (netInitCount++ == 0)
+	{
+		WSADATA data = {};
+		if (WSAStartup(MAKEWORD(2, 2), &data) != 0)
+			I_FatalError("Couldn't initialize Windows sockets");
+	}
+#else
+	++netInitCount;
+#endif
 }
 
 static void CloseNetworkLean()
@@ -300,15 +365,10 @@ static void CloseNetworkLean()
 	if (netInitCount == 0)
 		return;
 	netInitCount--;
-	// #ifdef _WIN32
-	// 	if (netInitCount == 0)
-	// 	{
-	// 		if (!DebugServer::RuntimeEvents::IsDebugServerRunning())
-	// 		{
-	// 			WSACleanup();
-	// 		}
-	// 	}
-	// #endif
+#ifdef _WIN32
+	if (netInitCount == 0)
+		WSACleanup();
+#endif
 }
 
 bool IsNetworkStartedLean()
@@ -328,15 +388,14 @@ static void StartNetwork(bool autoPort)
 	netgame     = true;
 	multiplayer = true;
 
-	// MySocket    = CreateUDPSocket();
-	// BindToLocalPort(MySocket, autoPort ? 0 : GamePort);
-
-	// u_long trueVal = 1u;
-	// #ifndef __sun
-	// ioctlsocket(MySocket, FIONBIO, &trueVal);
-	// #else
-	// fcntl(MySocket, F_SETFL, trueVal | O_NONBLOCK);
-	// #endif
+	if (UseUDP)
+	{
+		MySocket = CreateUDPSocket();
+		BindToLocalPort(MySocket, autoPort ? 0 : GamePort);
+		u_long nonblocking = 1;
+		if (ioctlsocket(MySocket, FIONBIO, &nonblocking) == SOCKET_ERROR)
+			I_FatalError("Couldn't set the network socket to non-blocking mode: %d", WSAGetLastError());
+	}
 }
 
 static void RememberSteamSession(uint64_t steamID)
@@ -351,7 +410,7 @@ static void RememberSteamSession(uint64_t steamID)
 
 static void CloseSteamSession(uint64_t steamID)
 {
-	if (steam_enabled && steamID != 0)
+	if (steam_enabled && !UseUDP && steamID != 0)
 	{
 		SteamNetworkingIdentity peer;
 		peer.SetSteamID64(steamID);
@@ -361,6 +420,11 @@ static void CloseSteamSession(uint64_t steamID)
 
 void CloseNetwork()
 {
+	if (MySocket != INVALID_SOCKET)
+	{
+		closesocket(MySocket);
+		MySocket = INVALID_SOCKET;
+	}
 	for (uint64_t steamID : SteamSessions)
 		CloseSteamSession(steamID);
 	for (const auto &client : Connected)
@@ -444,7 +508,7 @@ static void I_NetClientConnected(int client, unsigned int charLimit = 0u)
 	if (client == consoleplayer)
 		flags |= CFL_CONSOLEPLAYER;
 
-	if (steam_enabled)
+	if (steam_enabled && !UseUDP)
 	{
 		uint64_t steamID = Connected[client].SteamID;
 		if (client == consoleplayer && steamID == 0 && SteamUser() != nullptr)
@@ -529,7 +593,8 @@ static int FindClient(uint64_t steamID)
 
 static void SendPacket(uint64_t toSteamID)
 {
-	RememberSteamSession(toSteamID);
+	if (!UseUDP)
+		RememberSteamSession(toSteamID);
 	// Huge packets should be sent out as sequences, not as one big packet, otherwise it's prone
 	// to high amounts of congestion and reordering needed.
 	if (NetBufferLength > MAX_MSGLEN)
@@ -568,36 +633,63 @@ static void SendPacket(uint64_t toSteamID)
 	TransmitBuffer[2]  = crc >> 8;
 	TransmitBuffer[3]  = crc;
 
-	SteamNetworkingIdentity peer;
-	peer.SetSteamID64(toSteamID);
-	const EResult result = SteamNetworkingMessages()->SendMessageToUser(
-		peer, TransmitBuffer, size + 4, k_nSteamNetworkingSend_Unreliable, 0);
-	if (result != k_EResultOK)
-		DPrintf(DMSG_NOTIFY, "Failed to send Steam networking message to %llu (result %d)",
-		        static_cast<unsigned long long>(toSteamID), result);
+	if (UseUDP)
+	{
+		const sockaddr_in address = UnpackAddress(toSteamID);
+		const int sent = sendto(MySocket, reinterpret_cast<const char *>(TransmitBuffer), static_cast<int>(size + 4), 0,
+		                        reinterpret_cast<const sockaddr *>(&address), sizeof(address));
+		if (sent == SOCKET_ERROR)
+			DPrintf(DMSG_NOTIFY, "Failed to send UDP packet (error %d)", WSAGetLastError());
+	}
+	else
+	{
+		SteamNetworkingIdentity peer;
+		peer.SetSteamID64(toSteamID);
+		const EResult result = SteamNetworkingMessages()->SendMessageToUser(
+			peer, TransmitBuffer, size + 4, k_nSteamNetworkingSend_Unreliable, 0);
+		if (result != k_EResultOK)
+			DPrintf(DMSG_NOTIFY, "Failed to send Steam networking message to %llu (result %d)",
+			        static_cast<unsigned long long>(toSteamID), result);
+	}
 }
 
 static void GetPacket(uint64_t *from = nullptr)
 {
 	I_NetPumpSteam();
 
-	SteamNetworkingMessage_t *message = nullptr;
-	const int messages = SteamNetworkingMessages()->ReceiveMessagesOnChannel(0, &message, 1);
-	int       msgSize  = 0;
-	CSteamID  fromSteamID;
-	if (messages > 0 && message != nullptr)
+	int msgSize = 0;
+	uint64_t fromIdentity = 0;
+	if (UseUDP)
 	{
-		fromSteamID = message->m_identityPeer.GetSteamID();
-		RememberSteamSession(fromSteamID.ConvertToUint64());
-		if (message->m_cbSize > 0 && static_cast<size_t>(message->m_cbSize) <= sizeof(TransmitBuffer))
+		sockaddr_in fromAddress = {};
+		socklen_t addressSize = sizeof(fromAddress);
+		const int received = recvfrom(MySocket, reinterpret_cast<char *>(TransmitBuffer), sizeof(TransmitBuffer), 0,
+		                              reinterpret_cast<sockaddr *>(&fromAddress), &addressSize);
+		if (received > 0)
 		{
-			msgSize = message->m_cbSize;
-			memcpy(TransmitBuffer, message->m_pData, msgSize);
+			msgSize = received;
+			fromIdentity = PackAddress(fromAddress);
 		}
-		message->Release();
+	}
+	else
+	{
+		SteamNetworkingMessage_t *message = nullptr;
+		const int messages = SteamNetworkingMessages()->ReceiveMessagesOnChannel(0, &message, 1);
+		if (messages > 0 && message != nullptr)
+		{
+			const CSteamID fromSteamID = message->m_identityPeer.GetSteamID();
+			fromIdentity = fromSteamID.ConvertToUint64();
+			RememberSteamSession(fromIdentity);
+			if (message->m_cbSize > 0 && static_cast<size_t>(message->m_cbSize) <= sizeof(TransmitBuffer))
+			{
+				msgSize = message->m_cbSize;
+				memcpy(TransmitBuffer, message->m_pData, msgSize);
+			}
+			message->Release();
+		}
 	}
 
-	int client = FindClient(fromSteamID.ConvertToUint64());
+	int client = FindClient(fromIdentity);
 	if (msgSize > 0 && msgSize < 5)
 	{
 		msgSize = 0;
@@ -620,7 +712,7 @@ static void GetPacket(uint64_t *from = nullptr)
 			NetBuffer[0]    = NCMD_SETUP;
 			NetBuffer[1]    = PRE_IN_PROGRESS;
 			NetBufferLength = 2u;
-			SendPacket(fromSteamID.ConvertToUint64());
+			SendPacket(fromIdentity);
 			msgSize = 0;
 		}
 		else
@@ -670,12 +762,12 @@ static void GetPacket(uint64_t *from = nullptr)
 	RemoteClient    = client;
 	NetBufferLength = max<int>(msgSize, 0);
 	if (from != nullptr)
-		*from = fromSteamID.ConvertToUint64();
+		*from = fromIdentity;
 }
 
 void I_NetPumpSteam()
 {
-	if (steam_enabled)
+	if (steam_enabled && !UseUDP)
 		SteamAPI_RunCallbacks();
 }
 
@@ -1085,7 +1177,8 @@ static bool HostGame(int arg)
 	StartNetwork(false);
 
 	// Not in start network cos its used for join
-	SteamMatchmaking()->CreateLobby(k_ELobbyTypePublic, MaxClients);
+	if (!UseUDP)
+		SteamMatchmaking()->CreateLobby(k_ELobbyTypePublic, MaxClients);
 
 	I_NetInit("Waiting for other players...", true);
 	I_NetUpdatePlayers(1, MaxClients);
@@ -1203,7 +1296,7 @@ static FString ReadVerificationError(TArrayView<uint8_t> stream)
 static bool Guest_ContactHost(void *unused)
 {
 	// Listen for a reply.
-	const size_t addrSize = sizeof(sockaddr_in);
+	const size_t addrSize = sizeof(uint64_t);
 	uint64_t     from;
 	while (GetConnection(from))
 	{
@@ -1389,10 +1482,10 @@ static bool JoinGame(int arg)
 	StartNetwork(true);
 
 	// Host is always client 0.
-	// BuildAddress(Connected[0].SteamID, Args->GetArg(arg));
-
-	// Set the host's steam id to the passed join arg
-	Connected[0].SteamID = std::stoull(Args->GetArg(arg));
+	if (UseUDP)
+		Connected[0].SteamID = BuildAddress(Args->GetArg(arg));
+	else
+		Connected[0].SteamID = std::stoull(Args->GetArg(arg));
 	Connected[0].Status  = CSTAT_CONNECTING;
 
 	I_NetInit("Contacting host...", false);
@@ -1423,6 +1516,22 @@ static bool JoinGame(int arg)
 bool I_InitNetwork()
 {
 	// set up for network
+	const char *mode = Args->CheckValue(FArg_netmode);
+	UseUDP = !steam_enabled;
+	if (mode != nullptr)
+	{
+		if (!stricmp(mode, "udp") || !stricmp(mode, "classic"))
+			UseUDP = true;
+		else if (!stricmp(mode, "steam"))
+		{
+			if (!steam_enabled)
+				I_FatalError("Steam networking was selected, but Steam is unavailable");
+			UseUDP = false;
+		}
+		else
+			I_FatalError("Unknown network mode '%s' (expected 'steam' or 'udp')", mode);
+	}
+
 	const char *v = Args->CheckValue(FArg_dup);
 	if (v != nullptr)
 		TicDup = clamp<int>(atoi(v), 1, MAXTICDUP);
