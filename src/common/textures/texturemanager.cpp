@@ -30,6 +30,7 @@
 #include "cmdlib.h"
 #include "filesystem.h"
 #include "formats/multipatchtexture.h"
+#include "formats/respritetexture.h"
 #include "gstrings.h"
 #include "image.h"
 #include "m_round.h"
@@ -38,6 +39,8 @@
 #include "stringtable.h"
 #include "textures.h"
 #include "vectors.h"
+
+#include <cctype>
 
 using namespace FileSys;
 FTextureManager TexMan;
@@ -1089,6 +1092,7 @@ void FTextureManager::AddTexturesForWad(int wadnum, FMultipatchTextureBuilder &b
 
 	// Eighth: Expand multi-frame textures into new 'fake' ones
 	ExpandAseTextures(wadnum);
+	ExpandRespriteTextures(wadnum);
 
 	SortTexturesByType(firsttexture, Textures.Size());
 }
@@ -1124,6 +1128,34 @@ void FTextureManager::ExpandAseTextures(int wadnum)
 			auto tex   = CreateTextureFromLump(i, false, frame);
 			AddGameTexture(MakeGameTexture(tex, newName, ETextureType::Sprite));
 		}
+	}
+}
+
+void FTextureManager::ExpandRespriteTextures(int wadnum)
+{
+	const char* filename = fileSystem.GetResourceFileName(wadnum);
+	if (!filename) return;
+	const size_t filenameLength = std::strlen(filename);
+	constexpr size_t extensionLength = sizeof(".resprite") - 1;
+	if (filenameLength <= extensionLength || stricmp(filename + filenameLength - extensionLength, ".resprite") != 0)
+		return;
+
+	const std::string baseName(filename, filenameLength - extensionLength);
+
+	Printf(TEXTCOLOR_YELLOW "Loading resprite file: '%s'\n", filename);
+
+	TArray<FImageSource*> frames;
+	if (!RespriteTexture_Load(wadnum, frames)) return;
+
+	char spriteName[7] = {};
+	const size_t nameLength = std::min<size_t>(baseName.size(), 6);
+	for (size_t i = 0; i < nameLength; ++i)
+		spriteName[i] = static_cast<char>(std::toupper(static_cast<unsigned char>(baseName[i])));
+	spriteName[6] = '\0';
+	for (unsigned frame = 0; frame < frames.Size(); ++frame)
+	{
+		spriteName[4] = static_cast<char>('A' + frame);
+		AddGameTexture(MakeGameTexture(new FImageTexture(frames[frame]), spriteName, ETextureType::Sprite));
 	}
 }
 

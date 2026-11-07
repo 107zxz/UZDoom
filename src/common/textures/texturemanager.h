@@ -191,6 +191,7 @@ class FTextureManager
 	void DeleteAll();
 
 	void ExpandAseTextures(int wadnum);
+	void ExpandRespriteTextures(int wadnum);
 
 	void ReplaceTexture(FTextureID texid, FGameTexture *newtexture, bool free);
 

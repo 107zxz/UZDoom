@@ -1051,9 +1051,10 @@ DEFINE_ACTION_FUNCTION(_CVar, SetInt)
 DEFINE_ACTION_FUNCTION(_CVar, SetFloat)
 {
 	PARAM_SELF_STRUCT_PROLOGUE(FBaseCVar);
-	if (!(self->GetFlags() & CVAR_MOD))
+	// i_timescale is intentionally script-settable so games can configure their
+	// simulation rate at startup. Other non-mod CVARs remain menu-only.
+	if (!(self->GetFlags() & CVAR_MOD) && stricmp(self->GetName(), "i_timescale") != 0)
 	{
-		// Only menus are allowed to change non-mod CVARs.
 		if (DMenu::InMenu == 0)
 		{
 			ThrowAbortException(X_OTHER, "Attempt to change CVAR '%s' outside of menu code", self->GetName());

@@ -102,8 +102,16 @@ bool FResourceFile::IsFileInFolder(const char* const resPath)
 
 void FResourceFile::CheckEmbedded(uint32_t entry, LumpFilterInfo* lfi)
 {
-	// Checks for embedded archives
+	// Resprite projects are ZIP archives embedded as individual files in mod directories and PK3s.
 	auto FullName = Entries[entry].FileName;
+	const char* extension = strrchr(FullName, '.');
+	if (extension && !stricmp(extension, ".resprite"))
+	{
+		Entries[entry].Flags |= RESFF_EMBEDDED;
+		return;
+	}
+
+	// Checks for embedded WAD archives.
 	const char *c = strstr(FullName, ".wad"); // fixme: Use lfi for this.
 	if (c && strlen(c) == 4 && (!strchr(FullName, '/') || IsFileInFolder(FullName)))
 	{
@@ -385,7 +393,15 @@ void FResourceFile::PostProcessArchive(LumpFilterInfo *filter)
 
 	// Entries in archives are sorted alphabetically.
 	qsort(Entries, NumLumps, sizeof(Entries[0]), entrycmp);
-	if (!filter) return;
+	if (!filter)
+	{
+		for (uint32_t i = 0; i < NumLumps; i++)
+		{
+			const char* extension = strrchr(Entries[i].FileName, '.');
+			if (extension && !stricmp(extension, ".resprite")) CheckEmbedded(i, nullptr);
+		}
+		return;
+	}
 	FindCommonFolder(filter);
 
 	// Filter out lumps using the same names as the Autoload.* sections
