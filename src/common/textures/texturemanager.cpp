@@ -1141,6 +1141,12 @@ void FTextureManager::ExpandRespriteTextures(int wadnum)
 		return;
 
 	const std::string baseName(filename, filenameLength - extensionLength);
+	const FString textureName = ExtractFileBase(filename);
+	const char* resourcePath = fileSystem.GetResourceFileFullName(wadnum);
+	const char* texturePath = resourcePath;
+	const char* resourceSeparator = resourcePath ? std::strrchr(resourcePath, ':') : nullptr;
+	if (resourceSeparator && !(resourceSeparator == resourcePath + 1 && resourcePath[1] == ':'))
+		texturePath = resourceSeparator + 1;
 
 	Printf(TEXTCOLOR_YELLOW "Loading resprite file: '%s'\n", filename);
 
@@ -1155,7 +1161,13 @@ void FTextureManager::ExpandRespriteTextures(int wadnum)
 	for (unsigned frame = 0; frame < frames.Size(); ++frame)
 	{
 		spriteName[4] = static_cast<char>('A' + frame);
-		AddGameTexture(MakeGameTexture(new FImageTexture(frames[frame]), spriteName, ETextureType::Sprite));
+		auto texture = AddGameTexture(MakeGameTexture(new FImageTexture(frames[frame]), spriteName, ETextureType::Sprite));
+		if (frame == 0)
+		{
+			AddAlias(textureName.GetChars(), texture);
+			if (texturePath && *texturePath)
+				AddAlias(texturePath, texture);
+		}
 	}
 }
 
